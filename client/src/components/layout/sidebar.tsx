@@ -31,7 +31,7 @@ export function Sidebar() {
           <Pill className="h-5 w-5" />
         </div>
         <div>
-          <p className="font-semibold leading-none">PharmaCare</p>
+          <p className="font-semibold leading-none">HPK Pharmacy & Laboratory</p>
           <p className="text-xs text-muted-foreground">Inventory system</p>
         </div>
       </div>

@@ -9,7 +9,7 @@ import { useCategories } from "@/hooks/use-categories";
 import { Category } from "@/types/category";
 
 export default function CategoriesPage() {
-  const { categories, addCategory, updateCategory, deleteCategory } = useCategories();
+  const { categories, loading, error, addCategory, updateCategory, deleteCategory, refetch } = useCategories();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
@@ -25,16 +25,27 @@ export default function CategoriesPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {categories.map((category) => (
-          <CategoryCard
-            key={category.id}
-            category={category}
-            onEdit={setEditingCategory}
-            onDelete={deleteCategory}
-          />
-        ))}
-      </div>
+      {loading && <p className="text-sm text-muted-foreground">Loading categories...</p>}
+
+      {!loading && error && (
+        <div className="space-y-3">
+          <p className="text-sm text-red-500">Couldn't load categories: {error}</p>
+          <Button variant="outline" onClick={refetch}>Retry</Button>
+        </div>
+      )}
+
+      {!loading && !error && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {categories.map((category) => (
+            <CategoryCard
+              key={category.id}
+              category={category}
+              onEdit={setEditingCategory}
+              onDelete={(id) => deleteCategory(id).catch((err) => alert(err.message))}
+            />
+          ))}
+        </div>
+      )}
 
       <CategoryFormDialog mode="add" open={isAddOpen} onOpenChange={setIsAddOpen} onSubmit={addCategory} />
 
@@ -43,9 +54,7 @@ export default function CategoriesPage() {
         open={editingCategory !== null}
         onOpenChange={(open) => !open && setEditingCategory(null)}
         initialData={editingCategory}
-        onSubmit={(values) => {
-          if (editingCategory) updateCategory(editingCategory.id, values);
-        }}
+        onSubmit={(values) => editingCategory ? updateCategory(editingCategory.id, values) : Promise.resolve()}
       />
     </div>
   );

@@ -17,7 +17,7 @@ interface CategoryFormDialogProps {
   onOpenChange: (open: boolean) => void;
   mode: "add" | "edit";
   initialData?: Category | null;
-  onSubmit: (values: CategoryFormValues) => void;
+  onSubmit: (values: CategoryFormValues) => Promise<void>;
 }
 
 const emptyForm: CategoryFormValues = { name: "", description: "" };
@@ -33,13 +33,23 @@ export function CategoryFormDialog({ open, onOpenChange, mode, initialData, onSu
     }
   }, [open, initialData]);
 
-  function handleSubmit() {
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit() {
     if (!form.name.trim()) {
       setError("Category name is required.");
       return;
     }
-    onSubmit(form);
-    onOpenChange(false);
+    setSubmitting(true);
+    setError(null);
+    try {
+      await onSubmit(form);
+      onOpenChange(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -76,8 +86,9 @@ export function CategoryFormDialog({ open, onOpenChange, mode, initialData, onSu
         {error && <p className="text-sm text-red-500">{error}</p>}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit}>{mode === "add" ? "Add category" : "Save changes"}</Button>
+          <Button onClick={handleSubmit} disabled={submitting}>
+            {submitting ? "Saving..." : mode === "add" ? "Add category" : "Save changes"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

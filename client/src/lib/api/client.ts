@@ -2,9 +2,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    ...options,
-  });
+  credentials: "include",
+  headers: { "Content-Type": "application/json", ...options?.headers },
+  ...options,
+});
 
   if (!res.ok) {
     const errorBody = await res.json().catch(() => null);

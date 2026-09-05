@@ -8,14 +8,14 @@ interface CategoryInput {
 export const categoriesService = {
   async getAll() {
     const categories = await prisma.category.findMany({
-      include: { _count: { select: { medicines: true } } },
+      include: { _count: { select: { products: true } } },
       orderBy: { createdAt: "asc" },
     });
     return categories.map((c) => ({
       id: c.id,
       name: c.name,
       description: c.description,
-      medicineCount: c._count.medicines,
+      medicineCount: c._count.products,
     }));
   },
 

@@ -18,24 +18,24 @@ type NavItem =
 const navItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Medicines", href: "/medicines", icon: Pill },
-  { label: "Categories", href: "/categories", icon: Tags },
-  { label: "Suppliers", href: "/suppliers", icon: Truck },
-  {
-    label: "Purchases",
-    icon: ShoppingCart,
-    children: [
-      { label: "New purchase order", href: "/purchases/new" },
-      { label: "Purchase orders", href: "/purchases" },
-    ],
-  },
   {
     label: "Sales / POS",
     icon: DollarSign,
     children: [
-      { label: "New sale invoice", href: "/sales/new" },
-      { label: "Sales invoices", href: "/sales" },
+      { label: "New Sale Invoice", href: "/sales/new" },
+      { label: "Sales Invoices", href: "/sales" },
     ],
   },
+  {
+    label: "Purchases",
+    icon: ShoppingCart,
+    children: [
+      { label: "New Purchase Order", href: "/purchases/new" },
+      { label: "Purchase Orders", href: "/purchases" },
+    ],
+  },
+  { label: "Categories", href: "/categories", icon: Tags },
+  { label: "Suppliers", href: "/suppliers", icon: Truck },
   { label: "Customers", href: "/customers", icon: Users },
   { label: "Reports", href: "/reports", icon: FileText },
   { label: "Notifications", href: "/notifications", icon: Bell },

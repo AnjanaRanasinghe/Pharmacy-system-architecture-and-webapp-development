@@ -17,7 +17,7 @@ interface SupplierFormDialogProps {
   onOpenChange: (open: boolean) => void;
   mode: "add" | "edit";
   initialData?: Supplier | null;
-  onSubmit: (values: SupplierFormValues) => void;
+  onSubmit: (values: SupplierFormValues) => Promise<void>;
 }
 
 const emptyForm: SupplierFormValues = {
@@ -27,6 +27,7 @@ const emptyForm: SupplierFormValues = {
 export function SupplierFormDialog({ open, onOpenChange, mode, initialData, onSubmit }: SupplierFormDialogProps) {
   const [form, setForm] = useState<SupplierFormValues>(emptyForm);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -39,13 +40,21 @@ export function SupplierFormDialog({ open, onOpenChange, mode, initialData, onSu
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!form.name.trim() || !form.contactPerson.trim() || !form.phone.trim() || !form.email.trim()) {
       setError("Please fill in all required fields.");
       return;
     }
-    onSubmit(form);
-    onOpenChange(false);
+    setSubmitting(true);
+    setError(null);
+    try {
+      await onSubmit(form);
+      onOpenChange(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -72,7 +81,7 @@ export function SupplierFormDialog({ open, onOpenChange, mode, initialData, onSu
 
           <div className="space-y-1.5">
             <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" placeholder="+1 234-567-8900" value={form.phone}
+            <Input id="phone" placeholder="+94 77-123-4567" value={form.phone}
               onChange={(e) => handleChange("phone", e.target.value)} />
           </div>
           <div className="space-y-1.5">
@@ -97,8 +106,10 @@ export function SupplierFormDialog({ open, onOpenChange, mode, initialData, onSu
         {error && <p className="text-sm text-red-500">{error}</p>}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit}>{mode === "add" ? "Add supplier" : "Save changes"}</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
+          <Button onClick={handleSubmit} disabled={submitting}>
+            {submitting ? "Saving..." : mode === "add" ? "Add supplier" : "Save changes"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

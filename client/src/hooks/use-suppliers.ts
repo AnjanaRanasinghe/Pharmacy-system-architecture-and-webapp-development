@@ -1,34 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Supplier } from "@/types/supplier";
-
-const initialSuppliers: Supplier[] = [
-  { id: "1", name: "MedSupply Co.", contactPerson: "John Smith", phone: "+1 234-567-8900", email: "contact@medsupply.com", address: "123 Medical Street, NY 10001", paymentTerms: "Net 30", totalPurchases: 45000 },
-  { id: "2", name: "PharmaCorp", contactPerson: "Sarah Johnson", phone: "+1 234-567-8901", email: "info@pharmacorp.com", address: "456 Pharma Avenue, CA 90210", paymentTerms: "Net 45", totalPurchases: 62000 },
-  { id: "3", name: "HealthPlus", contactPerson: "Michael Brown", phone: "+1 234-567-8902", email: "sales@healthplus.com", address: "789 Health Road, TX 75001", paymentTerms: "Net 30", totalPurchases: 38000 },
-  { id: "4", name: "VitaHealth", contactPerson: "Emily Davis", phone: "+1 234-567-8903", email: "contact@vitahealth.com", address: "321 Wellness Lane, FL 33101", paymentTerms: "Net 60", totalPurchases: 51000 },
-];
+import { suppliersApi } from "@/lib/api/suppliers";
 
 type SupplierInput = Omit<Supplier, "id" | "totalPurchases">;
 
 export function useSuppliers() {
-  const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  function addSupplier(data: SupplierInput) {
-    // TODO: replace with `await api.post("/suppliers", data)` once the backend is ready
-    setSuppliers((prev) => [...prev, { ...data, id: crypto.randomUUID(), totalPurchases: 0 }]);
+  const fetchSuppliers = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setSuppliers(await suppliersApi.list());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load suppliers");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchSuppliers(); }, [fetchSuppliers]);
+
+  async function addSupplier(data: SupplierInput) {
+    const created = await suppliersApi.create(data);
+    setSuppliers((prev) => [...prev, { ...created, totalPurchases: 0 }]);
   }
-
-  function updateSupplier(id: string, data: SupplierInput) {
-    // TODO: replace with `await api.put(`/suppliers/${id}`, data)`
-    setSuppliers((prev) => prev.map((s) => (s.id === id ? { ...s, ...data } : s)));
+  async function updateSupplier(id: string, data: SupplierInput) {
+    const updated = await suppliersApi.update(id, data);
+    setSuppliers((prev) => prev.map((s) => (s.id === id ? { ...s, ...updated } : s)));
   }
-
-  function deleteSupplier(id: string) {
-    // TODO: replace with `await api.delete(`/suppliers/${id}`)`
+  async function deleteSupplier(id: string) {
+    await suppliersApi.remove(id);
     setSuppliers((prev) => prev.filter((s) => s.id !== id));
   }
 
-  return { suppliers, addSupplier, updateSupplier, deleteSupplier };
+  return { suppliers, loading, error, addSupplier, updateSupplier, deleteSupplier, refetch: fetchSuppliers };
 }

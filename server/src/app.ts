@@ -6,6 +6,7 @@ import { categoriesRouter } from "./modules/categories/categories.routes";
 import { authRouter } from "./modules/auth/auth.routes";
 import { productsRouter } from "./modules/products/products.routes";
 import { purchasesRouter } from "./modules/purchases/purchases.routes";
+import { suppliersRouter } from "./modules/suppliers/suppliers.routes";
 
 export const app = express();
 
@@ -20,6 +21,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/categories", categoriesRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/purchases", purchasesRouter);
+app.use("/api/suppliers", suppliersRouter);
 
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);

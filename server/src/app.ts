@@ -4,6 +4,8 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { categoriesRouter } from "./modules/categories/categories.routes";
 import { authRouter } from "./modules/auth/auth.routes";
+import { productsRouter } from "./modules/products/products.routes";
+import { purchasesRouter } from "./modules/purchases/purchases.routes";
 
 export const app = express();
 
@@ -16,6 +18,8 @@ app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
 app.use("/api/auth", authRouter);
 app.use("/api/categories", categoriesRouter);
+app.use("/api/products", productsRouter);
+app.use("/api/purchases", purchasesRouter);
 
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);

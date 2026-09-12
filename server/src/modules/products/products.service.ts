@@ -42,4 +42,45 @@ export const productsService = {
       data: { ...data, barcode: data.barcode?.trim() || generateInternalBarcode() },
     });
   },
+
+  async listWithStock() {
+  const products = await prisma.product.findMany({
+    include: {
+      category: true,
+      stockBatches: { where: { quantityOnHand: { gt: 0 } }, orderBy: { expiryDate: "asc" } },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  return products.map((p) => {
+    const totalQuantity = p.stockBatches.reduce((sum, b) => sum + b.quantityOnHand, 0);
+    const earliestBatch = p.stockBatches[0];
+    return {
+      id: p.id,
+      name: p.name,
+      brand: p.brand,
+      barcode: p.barcode,
+      category: p.category.name,
+      categoryId: p.categoryId,
+      sellingPrice: Number(p.sellingPrice),
+      reorderLevel: p.reorderLevel,
+      totalQuantity,
+      batchCount: p.stockBatches.length,
+      primaryBatchNumber: earliestBatch?.batchNumber ?? null,
+      nearestExpiry: earliestBatch?.expiryDate ?? null,
+    };
+    });
+  },
+
+  update(id: string, data: ProductInput) {
+    return prisma.product.update({
+      where: { id },
+      data: { ...data, barcode: data.barcode?.trim() || undefined },
+    });
+  },
+
+  remove(id: string) {
+    return prisma.product.delete({ where: { id } });
+  },
 };
+

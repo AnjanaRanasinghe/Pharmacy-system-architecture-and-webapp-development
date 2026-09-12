@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSuppliers } from "@/hooks/use-suppliers";
 import { usePurchases } from "@/hooks/use-purchases";
-import { ProductPicker } from "@/components/purchases/product-picker";
-import { QuickAddProductDialog } from "@/components/purchases/quick-add-product-dialog";
+import { ProductPicker } from "@/components/products/product-picker";
+import { ProductFormDialog } from "@/components/products/product-form-dialog";
 import { SupplierCombobox } from "@/components/suppliers/supplier-combobox";
 import { formatCurrency } from "@/lib/utils/currency";
 import { Product } from "@/types/product";
@@ -155,15 +155,13 @@ export default function NewPurchaseOrderPage() {
       </div>
 
       <div className="space-y-4 rounded-lg border bg-white p-6">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="font-semibold">Order items</h2>
-          <div className="relative flex-1 max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <h2 className="font-semibold">Order items</h2>
+        <div className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <ProductPicker
-              onSelect={addProductRow}
-              onCreateNew={(seed) => { setQuickAddSeed(seed); setQuickAddOpen(true); }}
+            onSelect={addProductRow}
+            onCreateNew={(seed) => { setQuickAddSeed(seed); setQuickAddOpen(true); }}
             />
-          </div>
         </div>
 
         {items.length === 0 && (
@@ -231,7 +229,7 @@ export default function NewPurchaseOrderPage() {
         </Button>
       </div>
 
-      <QuickAddProductDialog open={quickAddOpen} onOpenChange={setQuickAddOpen} initialValue={quickAddSeed} onCreated={addProductRow} />
+      <ProductFormDialog mode="add" open={quickAddOpen} onOpenChange={setQuickAddOpen} initialValue={quickAddSeed} onSaved={addProductRow} />
     </div>
   );
 }

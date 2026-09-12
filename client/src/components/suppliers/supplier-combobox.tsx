@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronsUpDown, Search } from "lucide-react";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -30,12 +30,9 @@ export function SupplierCombobox({ suppliers, value, onChange }: SupplierCombobo
         {selected ? selected.name : "Select supplier"}
         <ChevronsUpDown className="h-4 w-4 opacity-50" />
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0">
+      <PopoverContent className="w-72 p-0" align="start">
         <Command>
-          <div className="flex items-center gap-2 border-b px-3">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <CommandInput placeholder="Search suppliers..." className="border-0 focus:ring-0" />
-          </div>
+          <CommandInput placeholder="Search suppliers..." />
           <CommandList>
             <CommandEmpty>No supplier found.</CommandEmpty>
             <CommandGroup>

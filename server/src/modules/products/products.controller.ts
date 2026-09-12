@@ -30,4 +30,19 @@ export const productsController = {
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     res.status(201).json(await productsService.create(parsed.data));
   },
+
+  async listInventory(_req: Request, res: Response) {
+    res.json(await productsService.listWithStock());
+  },
+
+  async update(req: Request, res: Response) {
+    const parsed = productSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    res.json(await productsService.update(req.params.id, parsed.data));
+  },
+
+  async remove(req: Request, res: Response) {
+    await productsService.remove(req.params.id);
+    res.status(204).send();
+  },
 };

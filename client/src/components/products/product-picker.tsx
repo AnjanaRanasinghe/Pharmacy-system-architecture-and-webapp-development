@@ -59,7 +59,7 @@ export function ProductPicker({ onSelect, onCreateNew }: ProductPickerProps) {
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Scan barcode or search product..."
         autoFocus
-        className="pl-9 border-gray-200 transition-colors focus-visible:border-green-500 focus-visible:ring-2 focus-visible:ring-green-500/30"
+        className="h-11 w-full rounded-lg border-gray-200 pl-11 text-sm transition-colors focus-visible:border-green-500 focus-visible:ring-2 focus-visible:ring-green-500/30"
       />
       {open && query.trim() && (
         <div className="absolute z-10 mt-1 w-full rounded-md border bg-white shadow-lg">

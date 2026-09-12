@@ -42,7 +42,13 @@ export const productsController = {
   },
 
   async remove(req: Request, res: Response) {
-    await productsService.remove(req.params.id);
+    const result = await productsService.remove(req.params.id);
+    if (result.archived) {
+      return res.status(200).json({
+        archived: true,
+        message: "This product has purchase or sale history, so it was archived instead of permanently deleted.",
+      });
+    }
     res.status(204).send();
   },
 };

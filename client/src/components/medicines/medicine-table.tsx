@@ -59,10 +59,10 @@ export function MedicineTable({ medicines, onEdit, onDelete }: MedicineTableProp
                 <TableCell>
                   <div className="flex justify-end gap-1">
                     <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" aria-label="View barcode">
-                          <Barcode className="h-4 w-4" />
-                        </Button>
+                      <TooltipTrigger
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                        aria-label="View barcode">
+                        <Barcode className="h-4 w-4" />
                       </TooltipTrigger>
                       <TooltipContent>{m.barcode}</TooltipContent>
                     </Tooltip>

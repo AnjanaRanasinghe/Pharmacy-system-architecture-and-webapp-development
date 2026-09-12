@@ -92,7 +92,11 @@ export default function MedicinesPage() {
             <MedicineTable
               medicines={filtered}
               onEdit={openEditFromRow}
-              onDelete={(id) => deleteMedicine(id).catch((err) => alert(err.message))}
+              onDelete={(id) =>
+                  deleteMedicine(id)
+                    .then((result) => { if (result && "archived" in result && result.archived) alert(result.message); })
+                    .catch((err) => alert(err.message))
+                }
             />
           )}
         </div>

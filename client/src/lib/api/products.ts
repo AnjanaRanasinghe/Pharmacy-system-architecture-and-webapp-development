@@ -12,5 +12,5 @@ export const productsApi = {
   inventory: () => api.get<ProductInventoryRow[]>("/products/inventory"),
   create: (data: ProductInput) => api.post<Product>("/products", data),
   update: (id: string, data: ProductInput) => api.put<Product>(`/products/${id}`, data),
-  remove: (id: string) => api.delete<void>(`/products/${id}`),
+  remove: (id: string) => api.delete<{ archived?: boolean; message?: string } | void>(`/products/${id}`),
 };

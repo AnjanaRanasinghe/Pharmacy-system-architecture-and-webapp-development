@@ -24,8 +24,9 @@ export function useMedicines() {
   useEffect(() => { fetchMedicines(); }, [fetchMedicines]);
 
   async function deleteMedicine(id: string) {
-    await productsApi.remove(id);
+    const result = await productsApi.remove(id);
     setMedicines((prev) => prev.filter((m) => m.id !== id));
+    return result;
   }
 
   return { medicines, loading, error, deleteMedicine, refetch: fetchMedicines };

@@ -94,6 +94,7 @@ model Product {
   defaultSupplierId  String?  @map("default_supplier_id")
   sellingPrice       Decimal  @map("selling_price") @db.Decimal(10, 2)
   reorderLevel       Int      @default(20) @map("reorder_level")
+  isActive           Boolean  @default(true) @map("is_active")
   description        String?
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")

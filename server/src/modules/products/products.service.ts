@@ -18,15 +18,18 @@ function generateInternalBarcode() {
 export const productsService = {
   async search(query?: string) {
     return prisma.product.findMany({
-      where: query
-        ? {
-            OR: [
-              { name: { contains: query, mode: "insensitive" } },
-              { brand: { contains: query, mode: "insensitive" } },
-              { barcode: { contains: query, mode: "insensitive" } },
-            ],
-          }
-        : undefined,
+      where: {
+        isActive: true,
+        ...(query
+          ? {
+              OR: [
+                { name: { contains: query, mode: "insensitive" } },
+                { brand: { contains: query, mode: "insensitive" } },
+                { barcode: { contains: query, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
       include: { category: true },
       orderBy: { name: "asc" },
       take: 20,
@@ -34,7 +37,7 @@ export const productsService = {
   },
 
   findByBarcode(barcode: string) {
-    return prisma.product.findUnique({ where: { barcode } });
+    return prisma.product.findFirst({ where: { barcode, isActive: true } });
   },
 
   create(data: ProductInput) {
@@ -44,13 +47,14 @@ export const productsService = {
   },
 
   async listWithStock() {
-  const products = await prisma.product.findMany({
-    include: {
-      category: true,
-      stockBatches: { where: { quantityOnHand: { gt: 0 } }, orderBy: { expiryDate: "asc" } },
-    },
-    orderBy: { name: "asc" },
-  });
+    const products = await prisma.product.findMany({
+      where: { isActive: true },
+      include: {
+        category: true,
+        stockBatches: { where: { quantityOnHand: { gt: 0 } }, orderBy: { expiryDate: "asc" } },
+      },
+      orderBy: { name: "asc" },
+    });
 
   return products.map((p) => {
     const totalQuantity = p.stockBatches.reduce((sum, b) => sum + b.quantityOnHand, 0);
@@ -79,8 +83,18 @@ export const productsService = {
     });
   },
 
-  remove(id: string) {
-    return prisma.product.delete({ where: { id } });
+  async remove(id: string) {
+    try {
+      await prisma.product.delete({ where: { id } });
+      return { archived: false };
+    } catch (err: any) {
+      if (err.code === "P2003") {
+        // Has stock batches or transaction history — archive instead of destroying data
+        await prisma.product.update({ where: { id }, data: { isActive: false } });
+        return { archived: true };
+      }
+      throw err;
+    }
   },
 };
 

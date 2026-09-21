@@ -70,7 +70,7 @@ export default function PurchaseOrdersPage() {
                       <td className="p-3 text-muted-foreground">{new Date(p.orderDate).toLocaleDateString()}</td>
                       <td className="p-3">{p.items.length}</td>
                       <td className="p-3">{formatCurrency(p.totalAmount)}</td>
-                      <td className="p-3"><Badge className="bg-green-500 text-white hover:bg-inherit">{p.status}</Badge></td>
+                      <td className="p-3"><Badge className="bg-green-500 text-white">{p.status}</Badge></td>
                     </tr>
                     {isOpen && (
                       <tr key={`${p.id}-detail`} className="border-b bg-gray-50 last:border-0">

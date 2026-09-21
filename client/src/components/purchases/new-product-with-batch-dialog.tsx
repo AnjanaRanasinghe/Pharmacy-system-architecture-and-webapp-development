@@ -107,7 +107,11 @@ export function NewProductWithBatchDialog({ open, onOpenChange, initialValue, on
           </div>
           <div className="col-span-2 space-y-1.5">
             <Label>Category</Label>
-            <Select value={categoryId} onValueChange={(value) => setCategoryId(value ?? "")}>
+            <Select
+              value={categoryId}
+              onValueChange={(value) => setCategoryId(value ?? "")}
+              items={categories.map((c) => ({ value: c.id, label: c.name }))}
+            >
               <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
               <SelectContent>
                 {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}

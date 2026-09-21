@@ -2,14 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Purchase } from "@/types/purchase";
-import { purchasesApi } from "@/lib/api/purchases";
-
-interface CreatePurchaseInput {
-  supplierId: string;
-  orderDate: string;
-  expectedDelivery?: string;
-  items: { productId: string; batchNumber: string; expiryDate: string; quantity: number; costPrice: number }[];
-}
+import { purchasesApi, CreatePurchaseInput } from "@/lib/api/purchases";
 
 export function usePurchases() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);

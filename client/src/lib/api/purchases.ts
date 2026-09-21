@@ -2,7 +2,9 @@ import { api } from "./client";
 import { Purchase } from "@/types/purchase";
 
 interface CreatePurchaseItemInput {
-  productId: string;
+  productId?: string;
+  newProduct?: { name: string; brand: string; barcode?: string; categoryId: string };
+  productUpdates?: { name?: string; brand?: string };
   batchNumber: string;
   expiryDate: string;
   quantity: number;
@@ -10,7 +12,7 @@ interface CreatePurchaseItemInput {
   sellingAmount: number;
 }
 
-interface CreatePurchaseInput {
+export interface CreatePurchaseInput {
   supplierId: string;
   orderDate: string;
   expectedDelivery?: string;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, Search } from "lucide-react";
+import { Trash2, Pencil, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,14 +10,24 @@ import { useSuppliers } from "@/hooks/use-suppliers";
 import { usePurchases } from "@/hooks/use-purchases";
 import { ProductPicker } from "@/components/products/product-picker";
 import { NewProductWithBatchDialog, NewProductBatchResult } from "@/components/purchases/new-product-with-batch-dialog";
+import { EditPurchaseItemDialog, EditableItemFields } from "@/components/purchases/edit-purchase-item-dialog";
 import { SupplierCombobox } from "@/components/suppliers/supplier-combobox";
 import { formatCurrency } from "@/lib/utils/currency";
 import { Product } from "@/types/product";
 
 interface ItemRow {
   key: string;
-  productId: string;
-  productName: string;
+  // null while the product hasn't been created yet (added via the "new product"
+  // dialog) — it's only created in the database when the purchase order is submitted.
+  productId: string | null;
+  name: string;
+  brand: string;
+  barcode?: string;
+  categoryId: string;
+  // Only set for rows that started from an existing product, so we can tell at
+  // submit time whether name/brand were edited and need to be pushed back to it.
+  originalName?: string;
+  originalBrand?: string;
   batchNumber: string;
   expiryDate: string;
   quantity: number;
@@ -38,6 +48,7 @@ export default function NewPurchaseOrderPage() {
   const [items, setItems] = useState<ItemRow[]>([]);
   const [newProductOpen, setNewProductOpen] = useState(false);
   const [newProductSeed, setNewProductSeed] = useState("");
+  const [editingKey, setEditingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
@@ -76,23 +87,34 @@ export default function NewPurchaseOrderPage() {
 
   function addExistingProduct(product: Product) {
     setItems((prev) => [...prev, {
-      key: crypto.randomUUID(), productId: product.id,
-      productName: `${product.name} (${product.brand})`,
+      key: crypto.randomUUID(),
+      productId: product.id,
+      name: product.name,
+      brand: product.brand,
+      barcode: product.barcode ?? undefined,
+      categoryId: product.categoryId,
+      originalName: product.name,
+      originalBrand: product.brand,
       batchNumber: "", expiryDate: "", quantity: 0, purchasedAmount: 0, sellingAmount: 0,
     }]);
   }
 
   function addNewProduct(result: NewProductBatchResult) {
     setItems((prev) => [...prev, {
-      key: crypto.randomUUID(), productId: result.product.id,
-      productName: `${result.product.name} (${result.product.brand})`,
+      key: crypto.randomUUID(),
+      productId: null,
+      name: result.name,
+      brand: result.brand,
+      barcode: result.barcode,
+      categoryId: result.categoryId,
       batchNumber: result.batchNumber, expiryDate: result.expiryDate,
       quantity: result.quantity, purchasedAmount: result.purchasedAmount, sellingAmount: result.sellingAmount,
     }]);
   }
 
-  function updateRow(key: string, field: keyof ItemRow, value: string | number) {
-    setItems((prev) => prev.map((row) => (row.key === key ? { ...row, [field]: value } : row)));
+  function saveEdit(fields: EditableItemFields) {
+    if (!editingKey) return;
+    setItems((prev) => prev.map((row) => (row.key === editingKey ? { ...row, ...fields } : row)));
   }
 
   function removeRow(key: string) {
@@ -108,6 +130,7 @@ export default function NewPurchaseOrderPage() {
   }
 
   const total = items.reduce((sum, row) => sum + row.purchasedAmount, 0);
+  const editingRow = items.find((r) => r.key === editingKey) ?? null;
 
   async function handleSubmit() {
     if (!supplierId) return setError("Select a supplier.");
@@ -121,10 +144,31 @@ export default function NewPurchaseOrderPage() {
     try {
       await createPurchase({
         supplierId, orderDate, expectedDelivery: expectedDelivery || undefined,
-        items: items.map((r) => ({
-          productId: r.productId, batchNumber: r.batchNumber, expiryDate: r.expiryDate,
-          quantity: r.quantity, purchasedAmount: r.purchasedAmount, sellingAmount: r.sellingAmount,
-        })),
+        items: items.map((r) => {
+          const base = {
+            batchNumber: r.batchNumber, expiryDate: r.expiryDate,
+            quantity: r.quantity, purchasedAmount: r.purchasedAmount, sellingAmount: r.sellingAmount,
+          };
+
+          if (r.productId === null) {
+            return {
+              ...base,
+              newProduct: {
+                name: r.name, brand: r.brand, barcode: r.barcode, categoryId: r.categoryId,
+              },
+            };
+          }
+
+          const productUpdates: { name?: string; brand?: string } = {};
+          if (r.originalName !== undefined && r.name !== r.originalName) productUpdates.name = r.name;
+          if (r.originalBrand !== undefined && r.brand !== r.originalBrand) productUpdates.brand = r.brand;
+
+          return {
+            ...base,
+            productId: r.productId,
+            ...(Object.keys(productUpdates).length > 0 ? { productUpdates } : {}),
+          };
+        }),
       });
       clearDraft();
       router.push("/purchases");
@@ -202,25 +246,21 @@ export default function NewPurchaseOrderPage() {
                   const { purchasePrice, sellingPrice } = rowPrices(row);
                   return (
                     <tr key={row.key} className="border-b last:border-0">
-                      <td className="py-2 pr-2 whitespace-nowrap">{row.productName}</td>
-                      <td className="py-2 pr-2">
-                        <Input className="h-8 w-24" value={row.batchNumber} onChange={(e) => updateRow(row.key, "batchNumber", e.target.value)} />
+                      <td className="py-2 pr-2 whitespace-nowrap">
+                        <div className="font-medium">{row.name}</div>
+                        <div className="text-xs text-muted-foreground">{row.brand}</div>
                       </td>
-                      <td className="py-2 pr-2">
-                        <Input className="h-8 w-32" type="date" value={row.expiryDate} onChange={(e) => updateRow(row.key, "expiryDate", e.target.value)} />
-                      </td>
-                      <td className="py-2 pr-2">
-                        <Input className="h-8 w-20" type="number" min={1} value={row.quantity || ""} onChange={(e) => updateRow(row.key, "quantity", Number(e.target.value))} />
-                      </td>
-                      <td className="py-2 pr-2">
-                        <Input className="h-8 w-28" type="number" min={0} step="0.01" value={row.purchasedAmount || ""} onChange={(e) => updateRow(row.key, "purchasedAmount", Number(e.target.value))} />
-                      </td>
+                      <td className="py-2 pr-2 whitespace-nowrap">{row.batchNumber || "—"}</td>
+                      <td className="py-2 pr-2 whitespace-nowrap">{row.expiryDate || "—"}</td>
+                      <td className="py-2 pr-2">{row.quantity || "—"}</td>
+                      <td className="py-2 pr-2 whitespace-nowrap">{row.purchasedAmount ? formatCurrency(row.purchasedAmount) : "—"}</td>
                       <td className="py-2 pr-2 whitespace-nowrap text-muted-foreground">{row.quantity > 0 ? formatCurrency(purchasePrice) : "—"}</td>
-                      <td className="py-2 pr-2">
-                        <Input className="h-8 w-28" type="number" min={0} step="0.01" value={row.sellingAmount || ""} onChange={(e) => updateRow(row.key, "sellingAmount", Number(e.target.value))} />
-                      </td>
+                      <td className="py-2 pr-2 whitespace-nowrap">{row.sellingAmount ? formatCurrency(row.sellingAmount) : "—"}</td>
                       <td className="py-2 pr-2 whitespace-nowrap text-muted-foreground">{row.quantity > 0 ? formatCurrency(sellingPrice) : "—"}</td>
-                      <td className="py-2">
+                      <td className="py-2 whitespace-nowrap">
+                        <Button variant="ghost" size="icon" onClick={() => setEditingKey(row.key)} aria-label="Edit item">
+                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={() => removeRow(row.key)} aria-label="Remove item">
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
@@ -252,6 +292,12 @@ export default function NewPurchaseOrderPage() {
       </div>
 
       <NewProductWithBatchDialog open={newProductOpen} onOpenChange={setNewProductOpen} initialValue={newProductSeed} onCreated={addNewProduct} />
+      <EditPurchaseItemDialog
+        open={editingKey !== null}
+        onOpenChange={(open) => { if (!open) setEditingKey(null); }}
+        item={editingRow}
+        onSave={saveEdit}
+      />
     </div>
   );
 }

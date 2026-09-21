@@ -11,7 +11,7 @@ interface ProductInput {
   description?: string;
 }
 
-function generateInternalBarcode() {
+export function generateInternalBarcode() {
   return `INT-${Date.now().toString().slice(-9)}`;
 }
 

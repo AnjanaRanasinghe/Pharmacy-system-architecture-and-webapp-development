@@ -1,3 +1,19 @@
+export interface Product {
+  id: string;
+  name: string;
+  brand: string;
+  barcode: string | null;
+  categoryId: string;
+  category?: { id: string; name: string };
+  defaultSupplierId?: string | null;
+  sellingPrice: number;
+  reorderLevel: number;
+  isActive?: boolean;
+  description?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface ProductInventoryRow {
   id: string;
   name: string;

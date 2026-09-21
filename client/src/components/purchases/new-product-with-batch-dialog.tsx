@@ -9,12 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCategories } from "@/hooks/use-categories";
-import { productsApi } from "@/lib/api/products";
 import { formatCurrency } from "@/lib/utils/currency";
-import { Product } from "@/types/product";
 
 export interface NewProductBatchResult {
-  product: Product;
+  name: string;
+  brand: string;
+  barcode?: string;
+  categoryId: string;
   batchNumber: string;
   expiryDate: string;
   quantity: number;
@@ -43,7 +44,6 @@ export function NewProductWithBatchDialog({ open, onOpenChange, initialValue, on
   const [purchasedAmount, setPurchasedAmount] = useState("");
   const [sellingAmount, setSellingAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -59,31 +59,27 @@ export function NewProductWithBatchDialog({ open, onOpenChange, initialValue, on
   const purchasePrice = qtyNum > 0 ? Number(purchasedAmount) / qtyNum : 0;
   const sellingPrice = qtyNum > 0 ? Number(sellingAmount) / qtyNum : 0;
 
-  async function handleSubmit() {
+  function handleSubmit() {
     if (!name.trim() || !categoryId || !batchNumber.trim() || !expiryDate || qtyNum <= 0 || !purchasedAmount || !sellingAmount) {
       setError("All fields except brand and barcode are required, and quantity must be greater than 0.");
       return;
     }
-    setSubmitting(true);
     setError(null);
-    try {
-      const product = await productsApi.create({
-        name: name.trim(),
-        brand: brand.trim() || "Generic",
-        barcode: barcode.trim() || undefined,
-        categoryId,
-        sellingPrice: Math.round(sellingPrice * 100) / 100,
-      });
-      onCreated({
-        product, batchNumber: batchNumber.trim(), expiryDate,
-        quantity: qtyNum, purchasedAmount: Number(purchasedAmount), sellingAmount: Number(sellingAmount),
-      });
-      onOpenChange(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create product.");
-    } finally {
-      setSubmitting(false);
-    }
+    // Nothing is saved to the database here — this just adds a draft line to the
+    // order below. The product (and this batch) are only persisted when the whole
+    // purchase order is submitted.
+    onCreated({
+      name: name.trim(),
+      brand: brand.trim() || "Generic",
+      barcode: barcode.trim() || undefined,
+      categoryId,
+      batchNumber: batchNumber.trim(),
+      expiryDate,
+      quantity: qtyNum,
+      purchasedAmount: Number(purchasedAmount),
+      sellingAmount: Number(sellingAmount),
+    });
+    onOpenChange(false);
   }
 
   return (
@@ -161,8 +157,8 @@ export function NewProductWithBatchDialog({ open, onOpenChange, initialValue, on
         {error && <p className="text-sm text-red-500">{error}</p>}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={submitting}>{submitting ? "Saving..." : "Add product"}</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleSubmit}>Add item</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

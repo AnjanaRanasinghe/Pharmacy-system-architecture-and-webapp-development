@@ -1,7 +1,22 @@
 import { prisma } from "../../config/db";
+import { generateInternalBarcode } from "../products/products.service";
+
+interface NewProductInput {
+  name: string;
+  brand: string;
+  barcode?: string;
+  categoryId: string;
+}
+
+interface ProductUpdatesInput {
+  name?: string;
+  brand?: string;
+}
 
 interface PurchaseItemInput {
-  productId: string;
+  productId?: string;
+  newProduct?: NewProductInput;
+  productUpdates?: ProductUpdatesInput;
   batchNumber: string;
   expiryDate: string;
   quantity: number;
@@ -36,13 +51,42 @@ export const purchasesService = {
       });
       const poNumber = `PO-${year}-${String(countThisYear + 1).padStart(3, "0")}`;
 
-      const computedItems = input.items.map((i) => ({
-        ...i,
-        purchasePrice: round2(i.purchasedAmount / i.quantity),
-        sellingPrice: round2(i.sellingAmount / i.quantity),
-      }));
+      // Resolve each item's product first: create new products, or apply edits to
+      // existing ones, so every item ends up with a real productId before the
+      // purchase itself (and its nested items) is created.
+      const resolvedItems = [];
+      for (const item of input.items) {
+        let productId = item.productId;
+        const sellingPrice = round2(item.sellingAmount / item.quantity);
 
-      const totalAmount = computedItems.reduce((sum, i) => sum + i.purchasedAmount, 0);
+        if (item.newProduct) {
+          const created = await tx.product.create({
+            data: {
+              name: item.newProduct.name,
+              brand: item.newProduct.brand,
+              barcode: item.newProduct.barcode?.trim() || generateInternalBarcode(),
+              categoryId: item.newProduct.categoryId,
+              sellingPrice,
+            },
+          });
+          productId = created.id;
+        } else if (item.productUpdates && Object.keys(item.productUpdates).length > 0) {
+          await tx.product.update({ where: { id: productId! }, data: item.productUpdates });
+        }
+
+        resolvedItems.push({
+          productId: productId!,
+          batchNumber: item.batchNumber,
+          expiryDate: item.expiryDate,
+          quantity: item.quantity,
+          purchasedAmount: item.purchasedAmount,
+          purchasePrice: round2(item.purchasedAmount / item.quantity),
+          sellingAmount: item.sellingAmount,
+          sellingPrice,
+        });
+      }
+
+      const totalAmount = resolvedItems.reduce((sum, i) => sum + i.purchasedAmount, 0);
 
       const purchase = await tx.purchase.create({
         data: {
@@ -53,7 +97,7 @@ export const purchasesService = {
           status: "RECEIVED",
           totalAmount,
           items: {
-            create: computedItems.map((i) => ({
+            create: resolvedItems.map((i) => ({
               productId: i.productId,
               batchNumber: i.batchNumber,
               expiryDate: new Date(i.expiryDate),
@@ -65,7 +109,7 @@ export const purchasesService = {
             })),
           },
         },
-        include: { items: true },
+        include: { supplier: true, items: { include: { product: true } } },
       });
 
       for (const item of purchase.items) {

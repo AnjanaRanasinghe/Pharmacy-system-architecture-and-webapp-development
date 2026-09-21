@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useSuppliers } from "@/hooks/use-suppliers";
 import { usePurchases } from "@/hooks/use-purchases";
 import { ProductPicker } from "@/components/products/product-picker";
-import { ProductFormDialog } from "@/components/products/product-form-dialog";
+import { NewProductWithBatchDialog, NewProductBatchResult } from "@/components/purchases/new-product-with-batch-dialog";
 import { SupplierCombobox } from "@/components/suppliers/supplier-combobox";
 import { formatCurrency } from "@/lib/utils/currency";
 import { Product } from "@/types/product";
@@ -21,7 +21,8 @@ interface ItemRow {
   batchNumber: string;
   expiryDate: string;
   quantity: number;
-  costPrice: number;
+  purchasedAmount: number;
+  sellingAmount: number;
 }
 
 const DRAFT_KEY = "draft:new-purchase-order";
@@ -35,14 +36,13 @@ export default function NewPurchaseOrderPage() {
   const [orderDate, setOrderDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [expectedDelivery, setExpectedDelivery] = useState("");
   const [items, setItems] = useState<ItemRow[]>([]);
-  const [quickAddOpen, setQuickAddOpen] = useState(false);
-  const [quickAddSeed, setQuickAddSeed] = useState("");
+  const [newProductOpen, setNewProductOpen] = useState(false);
+  const [newProductSeed, setNewProductSeed] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const [draftSavedFlash, setDraftSavedFlash] = useState(false);
 
-  // Restore an in-progress order if you navigated away and came back
   useEffect(() => {
     const saved = localStorage.getItem(DRAFT_KEY);
     if (!saved) return;
@@ -58,32 +58,36 @@ export default function NewPurchaseOrderPage() {
     } catch {}
   }, []);
 
-  // Keep the draft up to date as you type
   useEffect(() => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ supplierId, orderDate, expectedDelivery, items }));
   }, [supplierId, orderDate, expectedDelivery, items]);
 
-  function clearDraft() {
-    localStorage.removeItem(DRAFT_KEY);
-  }
-
+  function clearDraft() { localStorage.removeItem(DRAFT_KEY); }
   function handleSaveDraft() {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ supplierId, orderDate, expectedDelivery, items }));
     setDraftSavedFlash(true);
     setTimeout(() => setDraftSavedFlash(false), 2000);
   }
-
   function discardDraft() {
     clearDraft();
     setSupplierId(""); setExpectedDelivery(""); setItems([]);
     setDraftRestored(false);
   }
 
-  function addProductRow(product: Product) {
+  function addExistingProduct(product: Product) {
     setItems((prev) => [...prev, {
       key: crypto.randomUUID(), productId: product.id,
       productName: `${product.name} (${product.brand})`,
-      batchNumber: "", expiryDate: "", quantity: 1, costPrice: 0,
+      batchNumber: "", expiryDate: "", quantity: 0, purchasedAmount: 0, sellingAmount: 0,
+    }]);
+  }
+
+  function addNewProduct(result: NewProductBatchResult) {
+    setItems((prev) => [...prev, {
+      key: crypto.randomUUID(), productId: result.product.id,
+      productName: `${result.product.name} (${result.product.brand})`,
+      batchNumber: result.batchNumber, expiryDate: result.expiryDate,
+      quantity: result.quantity, purchasedAmount: result.purchasedAmount, sellingAmount: result.sellingAmount,
     }]);
   }
 
@@ -95,13 +99,21 @@ export default function NewPurchaseOrderPage() {
     setItems((prev) => prev.filter((row) => row.key !== key));
   }
 
-  const total = items.reduce((sum, row) => sum + row.quantity * row.costPrice, 0);
+  function rowPrices(row: ItemRow) {
+    if (row.quantity <= 0) return { purchasePrice: 0, sellingPrice: 0 };
+    return {
+      purchasePrice: row.purchasedAmount / row.quantity,
+      sellingPrice: row.sellingAmount / row.quantity,
+    };
+  }
+
+  const total = items.reduce((sum, row) => sum + row.purchasedAmount, 0);
 
   async function handleSubmit() {
     if (!supplierId) return setError("Select a supplier.");
     if (items.length === 0) return setError("Add at least one item.");
-    if (items.some((r) => !r.batchNumber.trim() || !r.expiryDate || r.quantity <= 0)) {
-      return setError("Every item needs a batch number, expiry date, and quantity greater than 0.");
+    if (items.some((r) => !r.batchNumber.trim() || !r.expiryDate || r.quantity <= 0 || !r.purchasedAmount || !r.sellingAmount)) {
+      return setError("Every item needs a batch number, expiry date, quantity, purchased amount, and selling amount.");
     }
 
     setSubmitting(true);
@@ -110,8 +122,8 @@ export default function NewPurchaseOrderPage() {
       await createPurchase({
         supplierId, orderDate, expectedDelivery: expectedDelivery || undefined,
         items: items.map((r) => ({
-          productId: r.productId, batchNumber: r.batchNumber,
-          expiryDate: r.expiryDate, quantity: r.quantity, costPrice: r.costPrice,
+          productId: r.productId, batchNumber: r.batchNumber, expiryDate: r.expiryDate,
+          quantity: r.quantity, purchasedAmount: r.purchasedAmount, sellingAmount: r.sellingAmount,
         })),
       });
       clearDraft();
@@ -156,12 +168,13 @@ export default function NewPurchaseOrderPage() {
 
       <div className="space-y-4 rounded-lg border bg-white p-6">
         <h2 className="font-semibold">Order items</h2>
+
         <div className="relative">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <ProductPicker
-            onSelect={addProductRow}
-            onCreateNew={(seed) => { setQuickAddSeed(seed); setQuickAddOpen(true); }}
-            />
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <ProductPicker
+            onSelect={addExistingProduct}
+            onCreateNew={(seed) => { setNewProductSeed(seed); setNewProductOpen(true); }}
+          />
         </div>
 
         {items.length === 0 && (
@@ -169,49 +182,60 @@ export default function NewPurchaseOrderPage() {
         )}
 
         {items.length > 0 && (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-muted-foreground">
-                <th className="py-2">Product</th>
-                <th className="py-2">Batch #</th>
-                <th className="py-2">Expiry</th>
-                <th className="py-2">Qty</th>
-                <th className="py-2">Unit price</th>
-                <th className="py-2 text-right">Line total</th>
-                <th className="py-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((row) => (
-                <tr key={row.key} className="border-b last:border-0">
-                  <td className="py-2 pr-2">{row.productName}</td>
-                  <td className="py-2 pr-2">
-                    <Input className="h-8" value={row.batchNumber} onChange={(e) => updateRow(row.key, "batchNumber", e.target.value)} />
-                  </td>
-                  <td className="py-2 pr-2">
-                    <Input className="h-8" type="date" value={row.expiryDate} onChange={(e) => updateRow(row.key, "expiryDate", e.target.value)} />
-                  </td>
-                  <td className="py-2 pr-2">
-                    <Input className="h-8 w-20" type="number" min={1} value={row.quantity} onChange={(e) => updateRow(row.key, "quantity", Number(e.target.value))} />
-                  </td>
-                  <td className="py-2 pr-2">
-                    <Input className="h-8 w-24" type="number" min={0} step="0.01" value={row.costPrice} onChange={(e) => updateRow(row.key, "costPrice", Number(e.target.value))} />
-                  </td>
-                  <td className="py-2 text-right font-medium">{formatCurrency(row.quantity * row.costPrice)}</td>
-                  <td className="py-2 text-right">
-                    <Button variant="ghost" size="icon" onClick={() => removeRow(row.key)} aria-label="Remove item">
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px] text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="py-2 pr-2">Product</th>
+                  <th className="py-2 pr-2">Batch #</th>
+                  <th className="py-2 pr-2">Expiry</th>
+                  <th className="py-2 pr-2">Qty</th>
+                  <th className="py-2 pr-2">Purchased amount</th>
+                  <th className="py-2 pr-2">Purchase price</th>
+                  <th className="py-2 pr-2">Selling amount</th>
+                  <th className="py-2 pr-2">Selling price</th>
+                  <th className="py-2"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {items.map((row) => {
+                  const { purchasePrice, sellingPrice } = rowPrices(row);
+                  return (
+                    <tr key={row.key} className="border-b last:border-0">
+                      <td className="py-2 pr-2 whitespace-nowrap">{row.productName}</td>
+                      <td className="py-2 pr-2">
+                        <Input className="h-8 w-24" value={row.batchNumber} onChange={(e) => updateRow(row.key, "batchNumber", e.target.value)} />
+                      </td>
+                      <td className="py-2 pr-2">
+                        <Input className="h-8 w-32" type="date" value={row.expiryDate} onChange={(e) => updateRow(row.key, "expiryDate", e.target.value)} />
+                      </td>
+                      <td className="py-2 pr-2">
+                        <Input className="h-8 w-20" type="number" min={1} value={row.quantity || ""} onChange={(e) => updateRow(row.key, "quantity", Number(e.target.value))} />
+                      </td>
+                      <td className="py-2 pr-2">
+                        <Input className="h-8 w-28" type="number" min={0} step="0.01" value={row.purchasedAmount || ""} onChange={(e) => updateRow(row.key, "purchasedAmount", Number(e.target.value))} />
+                      </td>
+                      <td className="py-2 pr-2 whitespace-nowrap text-muted-foreground">{row.quantity > 0 ? formatCurrency(purchasePrice) : "—"}</td>
+                      <td className="py-2 pr-2">
+                        <Input className="h-8 w-28" type="number" min={0} step="0.01" value={row.sellingAmount || ""} onChange={(e) => updateRow(row.key, "sellingAmount", Number(e.target.value))} />
+                      </td>
+                      <td className="py-2 pr-2 whitespace-nowrap text-muted-foreground">{row.quantity > 0 ? formatCurrency(sellingPrice) : "—"}</td>
+                      <td className="py-2">
+                        <Button variant="ghost" size="icon" onClick={() => removeRow(row.key)} aria-label="Remove item">
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
 
         <div className="flex justify-end border-t pt-4">
-          <div className="flex w-56 justify-between text-sm font-semibold">
-            <span>Total</span><span>{formatCurrency(total)}</span>
+          <div className="flex w-64 justify-between text-sm font-semibold">
+            <span>Total (paid to supplier)</span><span>{formatCurrency(total)}</span>
           </div>
         </div>
       </div>
@@ -221,15 +245,13 @@ export default function NewPurchaseOrderPage() {
       <div className="flex items-center justify-end gap-2">
         {draftSavedFlash && <span className="text-sm text-green-600">Draft saved</span>}
         <Button variant="outline" onClick={() => router.push("/purchases")}>Cancel</Button>
-        <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50" onClick={handleSaveDraft}>
-          Save draft
-        </Button>
+        <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50" onClick={handleSaveDraft}>Save draft</Button>
         <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={handleSubmit} disabled={submitting}>
           {submitting ? "Saving..." : "Create purchase order"}
         </Button>
       </div>
 
-      <ProductFormDialog mode="add" open={quickAddOpen} onOpenChange={setQuickAddOpen} initialValue={quickAddSeed} onSaved={addProductRow} />
+      <NewProductWithBatchDialog open={newProductOpen} onOpenChange={setNewProductOpen} initialValue={newProductSeed} onCreated={addNewProduct} />
     </div>
   );
 }

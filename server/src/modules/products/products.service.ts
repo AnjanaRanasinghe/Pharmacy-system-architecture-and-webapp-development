@@ -47,14 +47,14 @@ export const productsService = {
   },
 
   async listWithStock() {
-    const products = await prisma.product.findMany({
-      where: { isActive: true },
-      include: {
-        category: true,
-        stockBatches: { where: { quantityOnHand: { gt: 0 } }, orderBy: { expiryDate: "asc" } },
-      },
-      orderBy: { name: "asc" },
-    });
+  const products = await prisma.product.findMany({
+    where: { isActive: true },
+    include: {
+      category: true,
+      stockBatches: { where: { quantityOnHand: { gt: 0 } }, orderBy: { expiryDate: "asc" } },
+    },
+    orderBy: { name: "asc" },
+  });
 
   return products.map((p) => {
     const totalQuantity = p.stockBatches.reduce((sum, b) => sum + b.quantityOnHand, 0);
@@ -67,14 +67,15 @@ export const productsService = {
       category: p.category.name,
       categoryId: p.categoryId,
       sellingPrice: Number(p.sellingPrice),
+      purchasePrice: earliestBatch ? Number(earliestBatch.purchasePrice) : null,
       reorderLevel: p.reorderLevel,
       totalQuantity,
       batchCount: p.stockBatches.length,
       primaryBatchNumber: earliestBatch?.batchNumber ?? null,
       nearestExpiry: earliestBatch?.expiryDate ?? null,
     };
-    });
-  },
+  });
+},
 
   update(id: string, data: ProductInput) {
     return prisma.product.update({

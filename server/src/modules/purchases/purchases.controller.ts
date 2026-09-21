@@ -7,7 +7,8 @@ const purchaseItemSchema = z.object({
   batchNumber: z.string().min(1, "Batch number is required"),
   expiryDate: z.string().min(1, "Expiry date is required"),
   quantity: z.number().int().positive("Quantity must be greater than 0"),
-  costPrice: z.number().nonnegative(),
+  purchasedAmount: z.number().nonnegative(),
+  sellingAmount: z.number().nonnegative(),
 });
 
 const purchaseSchema = z.object({
@@ -21,7 +22,6 @@ export const purchasesController = {
   async list(_req: Request, res: Response) {
     res.json(await purchasesService.list());
   },
-
   async create(req: Request, res: Response) {
     const parsed = purchaseSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });

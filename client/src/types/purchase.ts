@@ -1,10 +1,14 @@
 export interface PurchaseItemDto {
   id: string;
   productId: string;
+  product?: { name: string; brand: string };
   batchNumber: string;
   expiryDate: string;
   quantity: number;
-  costPrice: number;
+  purchasedAmount: number;
+  purchasePrice: number;
+  sellingAmount: number;
+  sellingPrice: number;
 }
 
 export interface Purchase {

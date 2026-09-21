@@ -5,7 +5,8 @@ interface PurchaseItemInput {
   batchNumber: string;
   expiryDate: string;
   quantity: number;
-  costPrice: number;
+  purchasedAmount: number;
+  sellingAmount: number;
 }
 
 interface CreatePurchaseInput {
@@ -15,26 +16,33 @@ interface CreatePurchaseInput {
   items: PurchaseItemInput[];
 }
 
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
+
 export const purchasesService = {
   list() {
     return prisma.purchase.findMany({
-      include: { supplier: true, items: true },
+      include: { supplier: true, items: { include: { product: true } } },
       orderBy: { createdAt: "desc" },
     });
   },
 
   async create(input: CreatePurchaseInput) {
     return prisma.$transaction(async (tx) => {
-      // Human-readable PO number: PO-<year>-<count of POs this year + 1>
       const year = new Date(input.orderDate).getFullYear();
       const countThisYear = await tx.purchase.count({
-        where: {
-          orderDate: { gte: new Date(`${year}-01-01`), lt: new Date(`${year + 1}-01-01`) },
-        },
+        where: { orderDate: { gte: new Date(`${year}-01-01`), lt: new Date(`${year + 1}-01-01`) } },
       });
       const poNumber = `PO-${year}-${String(countThisYear + 1).padStart(3, "0")}`;
 
-      const totalAmount = input.items.reduce((sum, i) => sum + i.quantity * i.costPrice, 0);
+      const computedItems = input.items.map((i) => ({
+        ...i,
+        purchasePrice: round2(i.purchasedAmount / i.quantity),
+        sellingPrice: round2(i.sellingAmount / i.quantity),
+      }));
+
+      const totalAmount = computedItems.reduce((sum, i) => sum + i.purchasedAmount, 0);
 
       const purchase = await tx.purchase.create({
         data: {
@@ -42,22 +50,24 @@ export const purchasesService = {
           supplierId: input.supplierId,
           orderDate: new Date(input.orderDate),
           expectedDelivery: input.expectedDelivery ? new Date(input.expectedDelivery) : null,
-          status: "RECEIVED", // stock is created immediately — see note below
+          status: "RECEIVED",
           totalAmount,
           items: {
-            create: input.items.map((i) => ({
+            create: computedItems.map((i) => ({
               productId: i.productId,
               batchNumber: i.batchNumber,
               expiryDate: new Date(i.expiryDate),
               quantity: i.quantity,
-              costPrice: i.costPrice,
+              purchasedAmount: i.purchasedAmount,
+              purchasePrice: i.purchasePrice,
+              sellingAmount: i.sellingAmount,
+              sellingPrice: i.sellingPrice,
             })),
           },
         },
         include: { items: true },
       });
 
-      // One StockBatch per line item — this is the moment stock actually enters the system
       for (const item of purchase.items) {
         await tx.stockBatch.create({
           data: {
@@ -66,8 +76,14 @@ export const purchasesService = {
             batchNumber: item.batchNumber,
             expiryDate: item.expiryDate,
             quantityOnHand: item.quantity,
-            costPrice: item.costPrice,
+            purchasePrice: item.purchasePrice,
           },
+        });
+
+        // Shelf price always reflects the most recently purchased selling price
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { sellingPrice: item.sellingPrice },
         });
       }
 

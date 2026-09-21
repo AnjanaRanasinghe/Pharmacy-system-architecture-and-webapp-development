@@ -1,14 +1,3 @@
-export interface Product {
-  id: string;
-  name: string;
-  brand: string;
-  barcode: string;
-  categoryId: string;
-  category?: { id: string; name: string };
-  sellingPrice: number;
-  reorderLevel: number;
-}
-
 export interface ProductInventoryRow {
   id: string;
   name: string;
@@ -17,6 +6,7 @@ export interface ProductInventoryRow {
   category: string;
   categoryId: string;
   sellingPrice: number;
+  purchasePrice: number | null;
   reorderLevel: number;
   totalQuantity: number;
   batchCount: number;

@@ -15,7 +15,7 @@ export function ProductPicker({ onSelect, onCreateNew }: ProductPickerProps) {
   const [results, setResults] = useState<Product[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     if (!query.trim()) { setResults([]); return; }

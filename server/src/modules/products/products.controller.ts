@@ -20,7 +20,7 @@ export const productsController = {
   },
 
   async findByBarcode(req: Request, res: Response) {
-    const product = await productsService.findByBarcode(req.params.code);
+    const product = await productsService.findByBarcode(String(req.params.code));
     if (!product) return res.status(404).json({ error: "No product found for this barcode" });
     res.json(product);
   },
@@ -38,11 +38,11 @@ export const productsController = {
   async update(req: Request, res: Response) {
     const parsed = productSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-    res.json(await productsService.update(req.params.id, parsed.data));
+    res.json(await productsService.update(String(req.params.id), parsed.data));
   },
 
   async remove(req: Request, res: Response) {
-    const result = await productsService.remove(req.params.id);
+    const result = await productsService.remove(String(req.params.id));
     if (result.archived) {
       return res.status(200).json({
         archived: true,

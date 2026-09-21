@@ -27,12 +27,12 @@ export const categoriesController = {
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.flatten() });
     }
-    const category = await categoriesService.update(req.params.id, parsed.data);
+    const category = await categoriesService.update(String(req.params.id), parsed.data);
     res.json(category);
   },
 
   async remove(req: Request, res: Response) {
-    await categoriesService.remove(req.params.id);
+    await categoriesService.remove(String(req.params.id));
     res.status(204).send();
   },
 };

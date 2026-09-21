@@ -23,10 +23,10 @@ export const suppliersController = {
   async update(req: Request, res: Response) {
     const parsed = supplierSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-    res.json(await suppliersService.update(req.params.id, parsed.data));
+    res.json(await suppliersService.update(String(req.params.id), parsed.data));
   },
   async remove(req: Request, res: Response) {
-    await suppliersService.remove(req.params.id);
+    await suppliersService.remove(String(req.params.id));
     res.status(204).send();
   },
 };

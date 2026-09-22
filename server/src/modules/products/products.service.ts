@@ -12,7 +12,10 @@ interface ProductInput {
 }
 
 export function generateInternalBarcode() {
-  return `INT-${Date.now().toString().slice(-9)}`;
+  // Timestamp alone can collide when several new products are created within the
+  // same millisecond (e.g. multiple new brands in one purchase order submission).
+  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
+  return `INT-${Date.now()}-${random}`;
 }
 
 export const productsService = {

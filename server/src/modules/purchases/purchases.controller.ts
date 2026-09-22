@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { purchasesService } from "./purchases.service";
+import { serializeDecimals } from "../../common/utils/serialize-decimals";
 
 const purchaseItemSchema = z
   .object({
@@ -39,11 +40,11 @@ const purchaseSchema = z.object({
 
 export const purchasesController = {
   async list(_req: Request, res: Response) {
-    res.json(await purchasesService.list());
+    res.json(serializeDecimals(await purchasesService.list()));
   },
   async create(req: Request, res: Response) {
     const parsed = purchaseSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-    res.status(201).json(await purchasesService.create(parsed.data));
+    res.status(201).json(serializeDecimals(await purchasesService.create(parsed.data)));
   },
 };

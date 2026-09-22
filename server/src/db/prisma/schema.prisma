@@ -177,6 +177,8 @@ model Sale {
   userId          String        @map("user_id")
   customerId      String?       @map("customer_id")
   soldAt          DateTime      @default(now()) @map("sold_at")
+  subtotalAmount  Decimal       @map("subtotal_amount") @db.Decimal(10, 2)
+  discountPercent Decimal       @default(0) @map("discount_percent") @db.Decimal(5, 2)
   totalAmount     Decimal       @map("total_amount") @db.Decimal(10, 2)
   paymentMethod   PaymentMethod @default(CASH) @map("payment_method")
 

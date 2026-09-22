@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,9 +56,8 @@ export default function PurchaseOrdersPage() {
               {purchases.map((p) => {
                 const isOpen = expandedId === p.id;
                 return (
-                  <>
+                  <Fragment key={p.id}>
                     <tr
-                      key={p.id}
                       className="cursor-pointer border-b last:border-0 hover:bg-gray-50"
                       onClick={() => setExpandedId(isOpen ? null : p.id)}
                     >
@@ -73,7 +72,7 @@ export default function PurchaseOrdersPage() {
                       <td className="p-3"><Badge className="bg-green-500 text-white">{p.status}</Badge></td>
                     </tr>
                     {isOpen && (
-                      <tr key={`${p.id}-detail`} className="border-b bg-gray-50 last:border-0">
+                      <tr className="border-b bg-gray-50 last:border-0">
                         <td colSpan={7} className="p-4">
                           <table className="w-full text-xs">
                             <thead>
@@ -106,7 +105,7 @@ export default function PurchaseOrdersPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>

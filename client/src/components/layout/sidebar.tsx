@@ -63,7 +63,7 @@ export function Sidebar() {
   });
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r bg-white">
+    <aside className="flex w-64 shrink-0 flex-col border-r bg-white print:hidden">
       <div className="flex items-center gap-2 border-b px-6 py-5">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white">
           <Pill className="h-5 w-5" />

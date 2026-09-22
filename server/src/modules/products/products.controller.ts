@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { productsService } from "./products.service";
+import { serializeDecimals } from "../../common/utils/serialize-decimals";
 
 const productSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -16,19 +17,19 @@ const productSchema = z.object({
 export const productsController = {
   async search(req: Request, res: Response) {
     const query = typeof req.query.search === "string" ? req.query.search : undefined;
-    res.json(await productsService.search(query));
+    res.json(serializeDecimals(await productsService.search(query)));
   },
 
   async findByBarcode(req: Request, res: Response) {
     const product = await productsService.findByBarcode(String(req.params.code));
     if (!product) return res.status(404).json({ error: "No product found for this barcode" });
-    res.json(product);
+    res.json(serializeDecimals(product));
   },
 
   async create(req: Request, res: Response) {
     const parsed = productSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-    res.status(201).json(await productsService.create(parsed.data));
+    res.status(201).json(serializeDecimals(await productsService.create(parsed.data)));
   },
 
   async listInventory(_req: Request, res: Response) {
@@ -38,7 +39,7 @@ export const productsController = {
   async update(req: Request, res: Response) {
     const parsed = productSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-    res.json(await productsService.update(String(req.params.id), parsed.data));
+    res.json(serializeDecimals(await productsService.update(String(req.params.id), parsed.data)));
   },
 
   async remove(req: Request, res: Response) {

@@ -25,7 +25,7 @@ export function Topbar() {
   }
 
   return (
-    <header className="flex items-center justify-between border-b bg-white px-8 py-4">
+    <header className="flex items-center justify-between border-b bg-white px-8 py-4 print:hidden">
       <div>
         <p className="text-sm font-medium">Welcome back, {user?.email}</p>
         <p className="text-xs text-muted-foreground">{today}</p>

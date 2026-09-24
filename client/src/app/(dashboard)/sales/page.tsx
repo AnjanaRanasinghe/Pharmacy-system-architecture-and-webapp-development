@@ -51,6 +51,8 @@ export default function SalesInvoicesPage() {
                 <th className="p-3">Subtotal</th>
                 <th className="p-3">Discount</th>
                 <th className="p-3">Total</th>
+                <th className="p-3">Cash tend</th>
+                <th className="p-3">Cash balance</th>
                 <th className="p-3">Payment</th>
                 <th className="p-3 text-right">Actions</th>
               </tr>
@@ -58,6 +60,7 @@ export default function SalesInvoicesPage() {
             <tbody>
               {sales.map((s) => {
                 const isOpen = expandedId === s.id;
+                const cashBalance = s.cashTendered != null ? s.cashTendered - s.totalAmount : null;
                 return (
                   <Fragment key={s.id}>
                     <tr
@@ -74,6 +77,8 @@ export default function SalesInvoicesPage() {
                       <td className="p-3">{formatCurrency(s.subtotalAmount)}</td>
                       <td className="p-3">{s.discountPercent > 0 ? `${s.discountPercent}%` : "—"}</td>
                       <td className="p-3 font-medium">{formatCurrency(s.totalAmount)}</td>
+                      <td className="p-3">{s.cashTendered != null ? formatCurrency(s.cashTendered) : "—"}</td>
+                      <td className="p-3">{cashBalance != null ? formatCurrency(cashBalance) : "—"}</td>
                       <td className="p-3">{s.paymentMethod}</td>
                       <td className="p-3 text-right">
                         <Link href={`/sales/${s.id}?print=1`} onClick={(e) => e.stopPropagation()}>
@@ -85,7 +90,7 @@ export default function SalesInvoicesPage() {
                     </tr>
                     {isOpen && (
                       <tr className="border-b bg-gray-50 last:border-0">
-                        <td colSpan={10} className="p-4">
+                        <td colSpan={12} className="p-4">
                           <table className="w-full text-xs">
                             <thead>
                               <tr className="text-left text-muted-foreground">

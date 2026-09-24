@@ -181,6 +181,7 @@ model Sale {
   discountPercent Decimal       @default(0) @map("discount_percent") @db.Decimal(5, 2)
   totalAmount     Decimal       @map("total_amount") @db.Decimal(10, 2)
   paymentMethod   PaymentMethod @default(CASH) @map("payment_method")
+  cashTendered    Decimal?      @map("cash_tendered") @db.Decimal(10, 2)
 
   user            User          @relation(fields: [userId], references: [id])
   customer        Customer?     @relation(fields: [customerId], references: [id])

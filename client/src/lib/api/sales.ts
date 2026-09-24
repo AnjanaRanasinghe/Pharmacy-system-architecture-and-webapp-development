@@ -9,6 +9,7 @@ interface CreateSaleItemInput {
 export interface CreateSaleInput {
   paymentMethod: "CASH" | "CARD" | "OTHER";
   discountPercent?: number;
+  cashTendered?: number;
   items: CreateSaleItemInput[];
 }
 

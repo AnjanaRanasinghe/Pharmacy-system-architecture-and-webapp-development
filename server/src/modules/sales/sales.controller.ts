@@ -12,6 +12,7 @@ const saleItemSchema = z.object({
 const createSaleSchema = z.object({
   paymentMethod: z.enum(["CASH", "CARD", "OTHER"]).default("CASH"),
   discountPercent: z.number().min(0).max(100).optional(),
+  cashTendered: z.number().nonnegative().optional(),
   items: z.array(saleItemSchema).min(1, "Add at least one item"),
 });
 

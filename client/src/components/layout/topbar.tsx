@@ -5,11 +5,7 @@ import { useRouter } from "next/navigation";
 import { Bell, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
-
-function displayNameFromEmail(email: string) {
-  const local = email.split("@")[0];
-  return local.charAt(0).toUpperCase() + local.slice(1);
-}
+import { displayNameFromEmail } from "@/lib/utils/user";
 
 export function Topbar() {
   const { user, logout } = useAuth();

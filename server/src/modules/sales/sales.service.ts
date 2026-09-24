@@ -10,6 +10,7 @@ interface CreateSaleInput {
   userId: string;
   paymentMethod: "CASH" | "CARD" | "OTHER";
   discountPercent?: number;
+  cashTendered?: number;
   items: SaleItemInput[];
 }
 
@@ -83,6 +84,10 @@ export const salesService = {
       const discountPercent = input.discountPercent ?? 0;
       const totalAmount = round2(subtotalAmount * (1 - discountPercent / 100));
 
+      if (input.paymentMethod === "CASH" && input.cashTendered !== undefined && input.cashTendered < totalAmount) {
+        throw new AppError(`Cash tendered (${input.cashTendered}) is less than the total (${totalAmount}).`);
+      }
+
       const year = new Date().getFullYear();
       const countThisYear = await tx.sale.count({
         where: { soldAt: { gte: new Date(`${year}-01-01`), lt: new Date(`${year + 1}-01-01`) } },
@@ -97,6 +102,7 @@ export const salesService = {
           subtotalAmount: round2(subtotalAmount),
           discountPercent,
           totalAmount,
+          cashTendered: input.cashTendered,
           items: {
             create: lineAllocations.flatMap((line) =>
               line.allocations.map((a) => ({

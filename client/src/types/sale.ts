@@ -22,5 +22,6 @@ export interface Sale {
   discountPercent: number;
   totalAmount: number;
   paymentMethod: "CASH" | "CARD" | "OTHER";
+  cashTendered?: number | null;
   items: SaleItemDto[];
 }

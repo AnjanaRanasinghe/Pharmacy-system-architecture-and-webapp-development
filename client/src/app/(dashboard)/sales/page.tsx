@@ -6,7 +6,7 @@ import { ChevronDown, Plus, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSales } from "@/hooks/use-sales";
 import { formatCurrency } from "@/lib/utils/currency";
-import { groupSaleItemsForDisplay } from "@/lib/utils/sale-items";
+import { groupSaleItemsForDisplay, lineDiscountAmount, lineNetAmount } from "@/lib/utils/sale-items";
 import { cn } from "@/lib/utils";
 
 export default function SalesInvoicesPage() {
@@ -61,6 +61,7 @@ export default function SalesInvoicesPage() {
               {sales.map((s) => {
                 const isOpen = expandedId === s.id;
                 const cashBalance = s.cashTendered != null ? s.cashTendered - s.totalAmount : null;
+                const totalDiscount = s.subtotalAmount - s.totalAmount;
                 return (
                   <Fragment key={s.id}>
                     <tr
@@ -75,7 +76,7 @@ export default function SalesInvoicesPage() {
                       <td className="p-3">{s.user?.name || s.user?.email}</td>
                       <td className="p-3">{s.items.length}</td>
                       <td className="p-3">{formatCurrency(s.subtotalAmount)}</td>
-                      <td className="p-3">{s.discountPercent > 0 ? `${s.discountPercent}%` : "—"}</td>
+                      <td className="p-3">{totalDiscount > 0 ? formatCurrency(totalDiscount) : "—"}</td>
                       <td className="p-3 font-medium">{formatCurrency(s.totalAmount)}</td>
                       <td className="p-3">{s.cashTendered != null ? formatCurrency(s.cashTendered) : "—"}</td>
                       <td className="p-3">{cashBalance != null ? formatCurrency(cashBalance) : "—"}</td>
@@ -97,6 +98,7 @@ export default function SalesInvoicesPage() {
                                 <th className="pb-2">Product</th>
                                 <th className="pb-2">Qty</th>
                                 <th className="pb-2">Unit price</th>
+                                <th className="pb-2">Discount</th>
                                 <th className="pb-2">Line total</th>
                               </tr>
                             </thead>
@@ -106,7 +108,12 @@ export default function SalesInvoicesPage() {
                                   <td className="py-1.5">{line.name} ({line.brand})</td>
                                   <td className="py-1.5">{line.quantity}</td>
                                   <td className="py-1.5">{formatCurrency(line.price)}</td>
-                                  <td className="py-1.5">{formatCurrency(line.price * line.quantity)}</td>
+                                  <td className="py-1.5">
+                                    {line.discountPercent > 0
+                                      ? `${line.discountPercent}% (-${formatCurrency(lineDiscountAmount(line))})`
+                                      : "—"}
+                                  </td>
+                                  <td className="py-1.5">{formatCurrency(lineNetAmount(line))}</td>
                                 </tr>
                               ))}
                             </tbody>

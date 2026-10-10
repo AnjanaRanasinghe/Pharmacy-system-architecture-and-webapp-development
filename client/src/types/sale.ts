@@ -3,6 +3,7 @@ export interface SaleItemDto {
   batchId: string;
   quantity: number;
   price: number;
+  discountPercent: number;
   batch?: {
     id: string;
     expiryDate: string;

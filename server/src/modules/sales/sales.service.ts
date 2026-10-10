@@ -4,6 +4,7 @@ import { AppError } from "../../common/errors/app-error";
 interface SaleItemInput {
   productId: string;
   quantity: number;
+  discountPercent?: number;
 }
 
 interface CreateSaleInput {
@@ -46,6 +47,7 @@ export const salesService = {
       // so an out-of-stock line fails the whole sale before any stock is touched.
       const lineAllocations: {
         unitPrice: number;
+        discountPercent: number;
         allocations: { batchId: string; quantity: number }[];
       }[] = [];
 
@@ -74,15 +76,28 @@ export const salesService = {
           );
         }
 
-        lineAllocations.push({ unitPrice: Number(product.sellingPrice), allocations });
+        lineAllocations.push({
+          unitPrice: Number(product.sellingPrice),
+          discountPercent: item.discountPercent ?? 0,
+          allocations,
+        });
       }
 
+      // Gross total, before any discount.
       const subtotalAmount = lineAllocations.reduce(
         (sum, line) => sum + line.allocations.reduce((s, a) => s + a.quantity, 0) * line.unitPrice,
         0
       );
+      // Each item's own discount is applied first...
+      const itemDiscountTotal = lineAllocations.reduce((sum, line) => {
+        const lineGross = line.allocations.reduce((s, a) => s + a.quantity, 0) * line.unitPrice;
+        return sum + round2(lineGross * (line.discountPercent / 100));
+      }, 0);
+      const afterItemDiscount = subtotalAmount - itemDiscountTotal;
+      // ...then the overall bill discount applies on what's left.
       const discountPercent = input.discountPercent ?? 0;
-      const totalAmount = round2(subtotalAmount * (1 - discountPercent / 100));
+      const billDiscountAmount = round2(afterItemDiscount * (discountPercent / 100));
+      const totalAmount = round2(afterItemDiscount - billDiscountAmount);
 
       if (input.paymentMethod === "CASH" && input.cashTendered !== undefined && input.cashTendered < totalAmount) {
         throw new AppError(`Cash tendered (${input.cashTendered}) is less than the total (${totalAmount}).`);
@@ -109,6 +124,7 @@ export const salesService = {
                 batchId: a.batchId,
                 quantity: a.quantity,
                 price: line.unitPrice,
+                discountPercent: line.discountPercent,
               }))
             ),
           },

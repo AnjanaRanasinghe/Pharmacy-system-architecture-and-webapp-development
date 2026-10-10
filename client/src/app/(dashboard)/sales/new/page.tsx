@@ -19,6 +19,23 @@ interface SaleRow {
   unitPrice: number;
   quantity: number;
   maxQuantity: number;
+  discountPercent: number;
+}
+
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
+
+function rowGross(row: SaleRow) {
+  return row.unitPrice * row.quantity;
+}
+
+function rowDiscountAmount(row: SaleRow) {
+  return round2(rowGross(row) * (row.discountPercent / 100));
+}
+
+function rowNet(row: SaleRow) {
+  return round2(rowGross(row) - rowDiscountAmount(row));
 }
 
 export default function NewSaleInvoicePage() {
@@ -27,7 +44,7 @@ export default function NewSaleInvoicePage() {
   const { createSale } = useSales();
 
   const [rows, setRows] = useState<SaleRow[]>([]);
-  const [discountPercent, setDiscountPercent] = useState("");
+  const [billDiscountPercent, setBillDiscountPercent] = useState("");
   const [cashTendered, setCashTendered] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -42,7 +59,10 @@ export default function NewSaleInvoicePage() {
       }
       return [
         ...prev,
-        { productId: row.id, name: row.name, brand: row.brand, unitPrice: row.sellingPrice, quantity: 1, maxQuantity: row.totalQuantity },
+        {
+          productId: row.id, name: row.name, brand: row.brand, unitPrice: row.sellingPrice,
+          quantity: 1, maxQuantity: row.totalQuantity, discountPercent: 0,
+        },
       ];
     });
   }
@@ -54,14 +74,26 @@ export default function NewSaleInvoicePage() {
     );
   }
 
+  function updateDiscount(productId: string, value: string) {
+    const num = Math.min(Math.max(Number(value) || 0, 0), 100);
+    setRows((prev) => prev.map((r) => (r.productId === productId ? { ...r, discountPercent: num } : r)));
+  }
+
   function removeRow(productId: string) {
     setRows((prev) => prev.filter((r) => r.productId !== productId));
   }
 
-  const subtotal = rows.reduce((sum, r) => sum + r.unitPrice * r.quantity, 0);
-  const discount = Number(discountPercent) || 0;
-  const discountAmount = subtotal * (discount / 100);
-  const total = subtotal - discountAmount;
+  // Gross total, before any discount.
+  const subtotal = rows.reduce((sum, r) => sum + rowGross(r), 0);
+  // Each item's own discount applies first...
+  const itemDiscountTotal = rows.reduce((sum, r) => sum + rowDiscountAmount(r), 0);
+  const afterItemDiscount = subtotal - itemDiscountTotal;
+  // ...then the overall bill discount applies on what's left.
+  const billDiscount = Number(billDiscountPercent) || 0;
+  const billDiscountAmount = round2(afterItemDiscount * (billDiscount / 100));
+  const total = round2(afterItemDiscount - billDiscountAmount);
+  const totalDiscount = round2(itemDiscountTotal + billDiscountAmount);
+
   const cashTendNum = Number(cashTendered) || 0;
   const cashBalance = cashTendNum - total;
 
@@ -75,12 +107,12 @@ export default function NewSaleInvoicePage() {
     try {
       const sale = await createSale({
         paymentMethod: "CASH",
-        discountPercent: discount || undefined,
+        discountPercent: billDiscount || undefined,
         cashTendered: cashTendNum,
-        items: rows.map((r) => ({ productId: r.productId, quantity: r.quantity })),
+        items: rows.map((r) => ({ productId: r.productId, quantity: r.quantity, discountPercent: r.discountPercent || undefined })),
       });
       setRows([]);
-      setDiscountPercent("");
+      setBillDiscountPercent("");
       setCashTendered("");
       router.push(`/sales/${sale.id}?print=1`);
     } catch (err) {
@@ -114,6 +146,7 @@ export default function NewSaleInvoicePage() {
                     <th className="py-2 pr-2">Medicine</th>
                     <th className="py-2 pr-2">Qty</th>
                     <th className="py-2 pr-2">Unit price</th>
+                    <th className="py-2 pr-2">Discount (%)</th>
                     <th className="py-2 pr-2">Line total</th>
                     <th className="py-2"></th>
                   </tr>
@@ -137,7 +170,19 @@ export default function NewSaleInvoicePage() {
                         <p className="mt-0.5 text-[11px] text-muted-foreground">of {row.maxQuantity} in stock</p>
                       </td>
                       <td className="py-2 pr-2 whitespace-nowrap">{formatCurrency(row.unitPrice)}</td>
-                      <td className="py-2 pr-2 whitespace-nowrap font-medium">{formatCurrency(row.unitPrice * row.quantity)}</td>
+                      <td className="py-2 pr-2">
+                        <Input
+                          className="h-8 w-20"
+                          type="number"
+                          min={0}
+                          max={100}
+                          step="0.01"
+                          value={row.discountPercent || ""}
+                          onChange={(e) => updateDiscount(row.productId, e.target.value)}
+                          placeholder="0"
+                        />
+                      </td>
+                      <td className="py-2 pr-2 whitespace-nowrap font-medium">{formatCurrency(rowNet(row))}</td>
                       <td className="py-2">
                         <Button variant="ghost" size="icon" onClick={() => removeRow(row.productId)} aria-label="Remove item">
                           <Trash2 className="h-4 w-4 text-red-500" />
@@ -156,15 +201,15 @@ export default function NewSaleInvoicePage() {
 
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Discount (%)</Label>
-            <Input type="number" min={0} max={100} step="0.01" value={discountPercent} onChange={(e) => setDiscountPercent(e.target.value)} placeholder="0" />
+            <Input type="number" min={0} max={100} step="0.01" value={billDiscountPercent} onChange={(e) => setBillDiscountPercent(e.target.value)} placeholder="0" />
           </div>
 
           <div className="space-y-1 border-t pt-3 text-sm">
             <div className="flex justify-between text-muted-foreground"><span>Items</span><span>{rows.length}</span></div>
             <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
-            {discount > 0 && (
+            {totalDiscount > 0 && (
               <div className="flex justify-between text-muted-foreground">
-                <span>Discount ({discount}%)</span><span>-{formatCurrency(discountAmount)}</span>
+                <span>Discount</span><span>-{formatCurrency(totalDiscount)}</span>
               </div>
             )}
             <div className="flex justify-between text-base font-semibold">

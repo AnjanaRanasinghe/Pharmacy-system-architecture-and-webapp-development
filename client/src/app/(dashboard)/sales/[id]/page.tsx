@@ -91,8 +91,8 @@ export default function SaleInvoicePage() {
         <div className="my-2 border-t border-dashed border-gray-400" />
 
         <div className="flex justify-between"><span>GROSS TOTAL</span><span>{formatCurrency(sale.subtotalAmount)}</span></div>
-        {sale.discountPercent > 0 && (
-          <div className="flex justify-between"><span>DISCOUNT ({sale.discountPercent}%)</span><span>{formatCurrency(discountAmount)}</span></div>
+        {discountAmount > 0 && (
+          <div className="flex justify-between"><span>DISCOUNT</span><span>{formatCurrency(discountAmount)}</span></div>
         )}
         <div className="flex justify-between text-sm font-bold"><span>NET TOTAL</span><span>{formatCurrency(sale.totalAmount)}</span></div>
         {sale.cashTendered != null && (

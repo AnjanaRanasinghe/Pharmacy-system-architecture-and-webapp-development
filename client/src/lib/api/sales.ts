@@ -4,6 +4,7 @@ import { Sale } from "@/types/sale";
 interface CreateSaleItemInput {
   productId: string;
   quantity: number;
+  discountPercent?: number;
 }
 
 export interface CreateSaleInput {

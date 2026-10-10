@@ -7,6 +7,7 @@ import { serializeDecimals } from "../../common/utils/serialize-decimals";
 const saleItemSchema = z.object({
   productId: z.string().uuid(),
   quantity: z.number().int().positive("Quantity must be greater than 0"),
+  discountPercent: z.number().min(0).max(100).optional(),
 });
 
 const createSaleSchema = z.object({

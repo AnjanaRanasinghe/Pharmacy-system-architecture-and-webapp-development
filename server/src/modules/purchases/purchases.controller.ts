@@ -12,12 +12,14 @@ const purchaseItemSchema = z
         brand: z.string().min(1, "Brand is required"),
         barcode: z.string().optional(),
         categoryId: z.string().uuid("Select a category"),
+        reorderLevel: z.number().int().nonnegative().optional(),
       })
       .optional(),
     productUpdates: z
       .object({
         name: z.string().min(1).optional(),
         brand: z.string().min(1).optional(),
+        reorderLevel: z.number().int().nonnegative().optional(),
       })
       .optional(),
     batchNumber: z.string().min(1, "Batch number is required"),

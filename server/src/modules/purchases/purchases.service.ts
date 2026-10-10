@@ -6,11 +6,13 @@ interface NewProductInput {
   brand: string;
   barcode?: string;
   categoryId: string;
+  reorderLevel?: number;
 }
 
 interface ProductUpdatesInput {
   name?: string;
   brand?: string;
+  reorderLevel?: number;
 }
 
 interface PurchaseItemInput {
@@ -66,6 +68,7 @@ export const purchasesService = {
               brand: item.newProduct.brand,
               barcode: item.newProduct.barcode?.trim() || generateInternalBarcode(),
               categoryId: item.newProduct.categoryId,
+              reorderLevel: item.newProduct.reorderLevel,
               sellingPrice,
             },
           });

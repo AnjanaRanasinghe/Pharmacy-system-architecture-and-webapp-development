@@ -24,10 +24,13 @@ interface ItemRow {
   brand: string;
   barcode?: string;
   categoryId: string;
+  reorderLevel: number;
   // Only set for rows that started from an existing product, so we can tell at
-  // submit time whether name/brand were edited and need to be pushed back to it.
+  // submit time whether name/brand/reorderLevel were edited and need to be pushed
+  // back to it.
   originalName?: string;
   originalBrand?: string;
+  originalReorderLevel?: number;
   batchNumber: string;
   expiryDate: string;
   quantity: number;
@@ -93,8 +96,10 @@ export default function NewPurchaseOrderPage() {
       brand: product.brand,
       barcode: product.barcode ?? undefined,
       categoryId: product.categoryId,
+      reorderLevel: product.reorderLevel,
       originalName: product.name,
       originalBrand: product.brand,
+      originalReorderLevel: product.reorderLevel,
       batchNumber: "", expiryDate: "", quantity: 0, purchasedAmount: 0, sellingAmount: 0,
     }]);
   }
@@ -107,6 +112,7 @@ export default function NewPurchaseOrderPage() {
       brand: result.brand,
       barcode: result.barcode,
       categoryId: result.categoryId,
+      reorderLevel: result.reorderLevel,
       batchNumber: result.batchNumber, expiryDate: result.expiryDate,
       quantity: result.quantity, purchasedAmount: result.purchasedAmount, sellingAmount: result.sellingAmount,
     }]);
@@ -155,13 +161,17 @@ export default function NewPurchaseOrderPage() {
               ...base,
               newProduct: {
                 name: r.name, brand: r.brand, barcode: r.barcode, categoryId: r.categoryId,
+                reorderLevel: r.reorderLevel,
               },
             };
           }
 
-          const productUpdates: { name?: string; brand?: string } = {};
+          const productUpdates: { name?: string; brand?: string; reorderLevel?: number } = {};
           if (r.originalName !== undefined && r.name !== r.originalName) productUpdates.name = r.name;
           if (r.originalBrand !== undefined && r.brand !== r.originalBrand) productUpdates.brand = r.brand;
+          if (r.originalReorderLevel !== undefined && r.reorderLevel !== r.originalReorderLevel) {
+            productUpdates.reorderLevel = r.reorderLevel;
+          }
 
           return {
             ...base,

@@ -12,6 +12,7 @@ import { formatCurrency } from "@/lib/utils/currency";
 export interface EditableItemFields {
   name: string;
   brand: string;
+  reorderLevel: number;
   batchNumber: string;
   expiryDate: string;
   quantity: number;
@@ -29,6 +30,7 @@ interface EditPurchaseItemDialogProps {
 export function EditPurchaseItemDialog({ open, onOpenChange, item, onSave }: EditPurchaseItemDialogProps) {
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
+  const [reorderLevel, setReorderLevel] = useState("20");
   const [batchNumber, setBatchNumber] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -40,6 +42,7 @@ export function EditPurchaseItemDialog({ open, onOpenChange, item, onSave }: Edi
     if (!open || !item) return;
     setName(item.name);
     setBrand(item.brand);
+    setReorderLevel(String(item.reorderLevel ?? 20));
     setBatchNumber(item.batchNumber);
     setExpiryDate(item.expiryDate);
     setQuantity(item.quantity ? String(item.quantity) : "");
@@ -60,6 +63,7 @@ export function EditPurchaseItemDialog({ open, onOpenChange, item, onSave }: Edi
     onSave({
       name: name.trim(),
       brand: brand.trim() || "Generic",
+      reorderLevel: Number(reorderLevel) || 0,
       batchNumber: batchNumber.trim(),
       expiryDate,
       quantity: qtyNum,
@@ -85,6 +89,10 @@ export function EditPurchaseItemDialog({ open, onOpenChange, item, onSave }: Edi
           <div className="col-span-2 space-y-1.5">
             <Label>Brand</Label>
             <Input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Leave blank if generic" />
+          </div>
+          <div className="col-span-2 space-y-1.5">
+            <Label>Low stock alert level</Label>
+            <Input type="number" min={0} value={reorderLevel} onChange={(e) => setReorderLevel(e.target.value)} />
           </div>
 
           <div className="col-span-2 border-t pt-4 text-sm font-medium text-muted-foreground">This shipment</div>

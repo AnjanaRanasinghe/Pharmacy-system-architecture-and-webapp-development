@@ -30,6 +30,7 @@ export function MedicineTable({ medicines, onEdit, onDelete }: MedicineTableProp
             <TableHead>Purchase price</TableHead>
             <TableHead>Selling price</TableHead>
             <TableHead>Quantity</TableHead>
+            <TableHead>Low stock at</TableHead>
             <TableHead>Nearest expiry</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -56,6 +57,7 @@ export function MedicineTable({ medicines, onEdit, onDelete }: MedicineTableProp
                 </TableCell>
                 <TableCell>{formatCurrency(m.sellingPrice)}</TableCell>
                 <TableCell className={lowStock ? "font-medium text-orange-500" : ""}>{m.totalQuantity}</TableCell>
+                <TableCell className="text-muted-foreground">{m.reorderLevel}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {m.nearestExpiry ? new Date(m.nearestExpiry).toLocaleDateString() : "—"}
                 </TableCell>

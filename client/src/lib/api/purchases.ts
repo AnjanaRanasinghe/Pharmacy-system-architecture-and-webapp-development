@@ -3,8 +3,8 @@ import { Purchase } from "@/types/purchase";
 
 interface CreatePurchaseItemInput {
   productId?: string;
-  newProduct?: { name: string; brand: string; barcode?: string; categoryId: string };
-  productUpdates?: { name?: string; brand?: string };
+  newProduct?: { name: string; brand: string; barcode?: string; categoryId: string; reorderLevel?: number };
+  productUpdates?: { name?: string; brand?: string; reorderLevel?: number };
   batchNumber: string;
   expiryDate: string;
   quantity: number;

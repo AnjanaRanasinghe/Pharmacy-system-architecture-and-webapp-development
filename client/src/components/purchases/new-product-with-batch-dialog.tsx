@@ -16,6 +16,7 @@ export interface NewProductBatchResult {
   brand: string;
   barcode?: string;
   categoryId: string;
+  reorderLevel: number;
   batchNumber: string;
   expiryDate: string;
   quantity: number;
@@ -38,6 +39,7 @@ export function NewProductWithBatchDialog({ open, onOpenChange, initialValue, on
   const [brand, setBrand] = useState("");
   const [barcode, setBarcode] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [reorderLevel, setReorderLevel] = useState("20");
   const [batchNumber, setBatchNumber] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -50,7 +52,7 @@ export function NewProductWithBatchDialog({ open, onOpenChange, initialValue, on
     setName(isBarcodeLike ? "" : initialValue);
     setBrand("");
     setBarcode(isBarcodeLike ? initialValue : "");
-    setCategoryId(""); setBatchNumber(""); setExpiryDate("");
+    setCategoryId(""); setReorderLevel("20"); setBatchNumber(""); setExpiryDate("");
     setQuantity(""); setPurchasedAmount(""); setSellingAmount("");
     setError(null);
   }, [open, initialValue, isBarcodeLike]);
@@ -73,6 +75,7 @@ export function NewProductWithBatchDialog({ open, onOpenChange, initialValue, on
       brand: brand.trim() || "Generic",
       barcode: barcode.trim() || undefined,
       categoryId,
+      reorderLevel: Number(reorderLevel) || 20,
       batchNumber: batchNumber.trim(),
       expiryDate,
       quantity: qtyNum,
@@ -117,6 +120,17 @@ export function NewProductWithBatchDialog({ open, onOpenChange, initialValue, on
                 {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+          <div className="col-span-2 space-y-1.5">
+            <Label>Low stock alert level</Label>
+            <Input
+              type="number" min={0} value={reorderLevel}
+              onChange={(e) => setReorderLevel(e.target.value)}
+              placeholder="e.g. 5 for slow-moving items, 100 for fast-moving ones"
+            />
+            <p className="text-xs text-muted-foreground">
+              Flag this medicine as "Low stock" once quantity on hand drops to this number or below.
+            </p>
           </div>
 
           <div className="col-span-2 border-t pt-4 text-sm font-medium text-muted-foreground">This shipment</div>

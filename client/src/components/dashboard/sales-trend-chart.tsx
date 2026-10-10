@@ -1,17 +1,9 @@
 "use client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { SalesVsPurchasesPoint } from "@/types/dashboard";
 
-const data = [
-  { month: "Jan", purchases: 2700, sales: 4100 },
-  { month: "Feb", purchases: 1450, sales: 3000 },
-  { month: "Mar", purchases: 3800, sales: 5200 },
-  { month: "Apr", purchases: 3900, sales: 4500 },
-  { month: "May", purchases: 4800, sales: 6100 },
-  { month: "Jun", purchases: 3600, sales: 5500 },
-];
-
-export function SalesTrendChart() {
+export function SalesTrendChart({ data }: { data: SalesVsPurchasesPoint[] }) {
   return (
     <Card>
       <CardHeader><CardTitle className="text-base font-semibold">Sales vs Purchases Trend</CardTitle></CardHeader>

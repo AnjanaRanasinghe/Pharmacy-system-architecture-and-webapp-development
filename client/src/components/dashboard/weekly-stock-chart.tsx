@@ -1,13 +1,9 @@
 "use client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { WeeklyStockUsagePoint } from "@/types/dashboard";
 
-const data = [
-  { day: "Mon", usage: 40 }, { day: "Tue", usage: 32 }, { day: "Wed", usage: 55 },
-  { day: "Thu", usage: 47 }, { day: "Fri", usage: 62 }, { day: "Sat", usage: 38 }, { day: "Sun", usage: 30 },
-];
-
-export function WeeklyStockChart() {
+export function WeeklyStockChart({ data }: { data: WeeklyStockUsagePoint[] }) {
   return (
     <Card>
       <CardHeader><CardTitle className="text-base font-semibold">Weekly Stock Usage</CardTitle></CardHeader>

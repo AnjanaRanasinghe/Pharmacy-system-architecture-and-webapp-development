@@ -6,13 +6,12 @@ interface StatCardProps {
   label: string;
   value: string;
   trend: string;
-  trendDirection: "up" | "down";
+  trendDirection: "up" | "down" | "neutral";
   icon: LucideIcon;
   iconBg: string;
 }
 
 export function StatCard({ label, value, trend, trendDirection, icon: Icon, iconBg }: StatCardProps) {
-  const isUp = trendDirection === "up";
   return (
     <Card>
       <CardContent className="p-5">
@@ -23,10 +22,14 @@ export function StatCard({ label, value, trend, trendDirection, icon: Icon, icon
           </div>
         </div>
         <p className="mt-2 text-2xl font-semibold">{value}</p>
-        <p className={cn("mt-1 flex items-center gap-1 text-xs", isUp ? "text-green-600" : "text-red-500")}>
-          {isUp ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-          {trend}
-        </p>
+        {trendDirection === "neutral" ? (
+          <p className="mt-1 text-xs text-muted-foreground">{trend}</p>
+        ) : (
+          <p className={cn("mt-1 flex items-center gap-1 text-xs", trendDirection === "up" ? "text-green-600" : "text-red-500")}>
+            {trendDirection === "up" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+            {trend}
+          </p>
+        )}
       </CardContent>
     </Card>
   );

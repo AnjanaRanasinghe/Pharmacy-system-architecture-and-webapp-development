@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Category } from "@/types/category";
+import { useFieldChainNav } from "@/hooks/use-field-chain-nav";
 
 type CategoryFormValues = Pick<Category, "name" | "description">;
 
@@ -34,6 +35,9 @@ export function CategoryFormDialog({ open, onOpenChange, mode, initialData, onSu
   }, [open, initialData]);
 
   const [submitting, setSubmitting] = useState(false);
+  // 0 name, 1 submit button. Description is a Textarea, deliberately left out of
+  // the chain (see hook comment).
+  const { registerRef, handleKeyDown } = useFieldChainNav(2);
 
   async function handleSubmit() {
     if (!form.name.trim()) {
@@ -66,10 +70,12 @@ export function CategoryFormDialog({ open, onOpenChange, mode, initialData, onSu
           <div className="space-y-1.5">
             <Label htmlFor="categoryName">Category name</Label>
             <Input
+              ref={registerRef(0)}
               id="categoryName"
               placeholder="Enter category name"
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              onKeyDown={handleKeyDown(0)}
             />
           </div>
           <div className="space-y-1.5">
@@ -86,7 +92,7 @@ export function CategoryFormDialog({ open, onOpenChange, mode, initialData, onSu
         {error && <p className="text-sm text-red-500">{error}</p>}
 
         <DialogFooter>
-          <Button onClick={handleSubmit} disabled={submitting}>
+          <Button ref={registerRef(1)} onClick={handleSubmit} onKeyDown={handleKeyDown(1)} disabled={submitting}>
             {submitting ? "Saving..." : mode === "add" ? "Add category" : "Save changes"}
           </Button>
         </DialogFooter>

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCategories } from "@/hooks/use-categories";
 import { formatCurrency } from "@/lib/utils/currency";
+import { useFieldChainNav } from "@/hooks/use-field-chain-nav";
 
 export interface NewProductBatchResult {
   name: string;
@@ -46,6 +47,10 @@ export function NewProductWithBatchDialog({ open, onOpenChange, initialValue, on
   const [purchasedAmount, setPurchasedAmount] = useState("");
   const [sellingAmount, setSellingAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // 0 name, 1 brand, 2 barcode, 3 reorderLevel, 4 batchNumber, 5 expiryDate,
+  // 6 quantity, 7 purchasedAmount, 8 sellingAmount, 9 Add item button.
+  // Category is a Select, deliberately left out of the chain (see hook comment).
+  const { registerRef, handleKeyDown } = useFieldChainNav(10);
 
   useEffect(() => {
     if (!open) return;
@@ -98,15 +103,15 @@ export function NewProductWithBatchDialog({ open, onOpenChange, initialValue, on
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2 space-y-1.5">
             <Label>Product name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Paracetamol 500mg" />
+            <Input ref={registerRef(0)} value={name} onChange={(e) => setName(e.target.value)} onKeyDown={handleKeyDown(0)} placeholder="e.g. Paracetamol 500mg" />
           </div>
           <div className="space-y-1.5">
             <Label>Brand</Label>
-            <Input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Leave blank if generic" />
+            <Input ref={registerRef(1)} value={brand} onChange={(e) => setBrand(e.target.value)} onKeyDown={handleKeyDown(1)} placeholder="Leave blank if generic" />
           </div>
           <div className="space-y-1.5">
             <Label>Barcode</Label>
-            <Input value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="Auto-generated if blank" />
+            <Input ref={registerRef(2)} value={barcode} onChange={(e) => setBarcode(e.target.value)} onKeyDown={handleKeyDown(2)} placeholder="Auto-generated if blank" />
           </div>
           <div className="col-span-2 space-y-1.5">
             <Label>Category</Label>
@@ -124,8 +129,10 @@ export function NewProductWithBatchDialog({ open, onOpenChange, initialValue, on
           <div className="col-span-2 space-y-1.5">
             <Label>Low stock alert level</Label>
             <Input
+              ref={registerRef(3)}
               type="number" min={0} value={reorderLevel}
               onChange={(e) => setReorderLevel(e.target.value)}
+              onKeyDown={handleKeyDown(3)}
               placeholder="e.g. 5 for slow-moving items, 100 for fast-moving ones"
             />
             <p className="text-xs text-muted-foreground">
@@ -137,21 +144,21 @@ export function NewProductWithBatchDialog({ open, onOpenChange, initialValue, on
 
           <div className="space-y-1.5">
             <Label>Batch #</Label>
-            <Input value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} />
+            <Input ref={registerRef(4)} value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} onKeyDown={handleKeyDown(4)} />
           </div>
           <div className="space-y-1.5">
             <Label>Expiry date</Label>
-            <Input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
+            <Input ref={registerRef(5)} type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} onKeyDown={handleKeyDown(5, { allowArrows: false })} />
           </div>
           <div className="space-y-1.5">
             <Label>Quantity</Label>
-            <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="e.g. 100 tablets" />
+            <Input ref={registerRef(6)} type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} onKeyDown={handleKeyDown(6)} placeholder="e.g. 100 tablets" />
           </div>
           <div />
 
           <div className="space-y-1.5">
             <Label>Purchased amount (Rs.)</Label>
-            <Input type="number" min={0} step="0.01" value={purchasedAmount} onChange={(e) => setPurchasedAmount(e.target.value)} placeholder="Total you paid" />
+            <Input ref={registerRef(7)} type="number" min={0} step="0.01" value={purchasedAmount} onChange={(e) => setPurchasedAmount(e.target.value)} onKeyDown={handleKeyDown(7)} placeholder="Total you paid" />
           </div>
           <div className="space-y-1.5">
             <Label className="text-muted-foreground">Purchase price / unit</Label>
@@ -162,7 +169,7 @@ export function NewProductWithBatchDialog({ open, onOpenChange, initialValue, on
 
           <div className="space-y-1.5">
             <Label>Selling amount (Rs.)</Label>
-            <Input type="number" min={0} step="0.01" value={sellingAmount} onChange={(e) => setSellingAmount(e.target.value)} placeholder="Total resale value" />
+            <Input ref={registerRef(8)} type="number" min={0} step="0.01" value={sellingAmount} onChange={(e) => setSellingAmount(e.target.value)} onKeyDown={handleKeyDown(8)} placeholder="Total resale value" />
           </div>
           <div className="space-y-1.5">
             <Label className="text-muted-foreground">Selling price / unit</Label>
@@ -176,7 +183,7 @@ export function NewProductWithBatchDialog({ open, onOpenChange, initialValue, on
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit}>Add item</Button>
+          <Button ref={registerRef(9)} onClick={handleSubmit} onKeyDown={handleKeyDown(9)}>Add item</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

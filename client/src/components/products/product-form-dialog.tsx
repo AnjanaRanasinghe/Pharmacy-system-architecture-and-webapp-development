@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCategories } from "@/hooks/use-categories";
 import { productsApi } from "@/lib/api/products";
 import { Product } from "@/types/product";
+import { useFieldChainNav } from "@/hooks/use-field-chain-nav";
 
 interface ProductFormDialogProps {
   open: boolean;
@@ -33,6 +34,9 @@ export function ProductFormDialog({ open, onOpenChange, mode, initialValue = "",
   const [reorderLevel, setReorderLevel] = useState("20");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // 0 name, 1 brand, 2 barcode, 3 sellingPrice, 4 reorderLevel, 5 submit button.
+  // Category is a Select, deliberately left out of the chain (see hook comment).
+  const { registerRef, handleKeyDown } = useFieldChainNav(6);
 
   useEffect(() => {
     if (!open) return;
@@ -100,15 +104,15 @@ export function ProductFormDialog({ open, onOpenChange, mode, initialValue = "",
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label>Product name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Paracetamol 500mg" />
+            <Input ref={registerRef(0)} value={name} onChange={(e) => setName(e.target.value)} onKeyDown={handleKeyDown(0)} placeholder="e.g. Paracetamol 500mg" />
           </div>
           <div className="space-y-1.5">
             <Label>Brand</Label>
-            <Input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Leave blank if generic" />
+            <Input ref={registerRef(1)} value={brand} onChange={(e) => setBrand(e.target.value)} onKeyDown={handleKeyDown(1)} placeholder="Leave blank if generic" />
           </div>
           <div className="space-y-1.5">
             <Label>Barcode</Label>
-            <Input value={barcode} onChange={(e) => setBarcode(e.target.value)}
+            <Input ref={registerRef(2)} value={barcode} onChange={(e) => setBarcode(e.target.value)} onKeyDown={handleKeyDown(2)}
               placeholder="Leave blank to auto-generate an internal code" />
           </div>
           <div className="space-y-1.5">
@@ -127,11 +131,11 @@ export function ProductFormDialog({ open, onOpenChange, mode, initialValue = "",
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Selling price (Rs.)</Label>
-              <Input type="number" step="0.01" value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value)} />
+              <Input ref={registerRef(3)} type="number" step="0.01" value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value)} onKeyDown={handleKeyDown(3)} />
             </div>
             <div className="space-y-1.5">
               <Label>Reorder level</Label>
-              <Input type="number" min={0} value={reorderLevel} onChange={(e) => setReorderLevel(e.target.value)} />
+              <Input ref={registerRef(4)} type="number" min={0} value={reorderLevel} onChange={(e) => setReorderLevel(e.target.value)} onKeyDown={handleKeyDown(4)} />
             </div>
           </div>
         </div>
@@ -140,7 +144,7 @@ export function ProductFormDialog({ open, onOpenChange, mode, initialValue = "",
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
+          <Button ref={registerRef(5)} onClick={handleSubmit} onKeyDown={handleKeyDown(5)} disabled={submitting}>
             {submitting ? "Saving..." : mode === "edit" ? "Save changes" : "Add medicine"}
           </Button>
         </DialogFooter>

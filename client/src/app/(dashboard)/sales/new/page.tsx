@@ -62,8 +62,13 @@ export default function NewSaleInvoicePage() {
 
   useEffect(() => {
     if (!pendingFocusId) return;
-    cellRefs.current[`${pendingFocusId}-qty`]?.focus();
+    // Deferred to the next frame: selecting via a mouse click on a dropdown
+    // option removes that (focused) button from the DOM, and the browser resets
+    // focus to <body> right after — an immediate focus() call here would get
+    // silently clobbered by that reset.
+    const raf = requestAnimationFrame(() => cellRefs.current[`${pendingFocusId}-qty`]?.focus());
     setPendingFocusId(null);
+    return () => cancelAnimationFrame(raf);
   }, [rows, pendingFocusId]);
 
   function addItem(row: ProductInventoryRow) {

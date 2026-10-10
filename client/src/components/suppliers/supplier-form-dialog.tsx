@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Supplier } from "@/types/supplier";
+import { useFieldChainNav } from "@/hooks/use-field-chain-nav";
 
 type SupplierFormValues = Omit<Supplier, "id" | "totalPurchases">;
 
@@ -28,6 +29,9 @@ export function SupplierFormDialog({ open, onOpenChange, mode, initialData, onSu
   const [form, setForm] = useState<SupplierFormValues>(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // 0 name, 1 contactPerson, 2 phone, 3 email, 4 paymentTerms, 5 submit button.
+  // Address is a Textarea, deliberately left out of the chain (see hook comment).
+  const { registerRef, handleKeyDown } = useFieldChainNav(6);
 
   useEffect(() => {
     if (open) {
@@ -70,24 +74,24 @@ export function SupplierFormDialog({ open, onOpenChange, mode, initialData, onSu
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="supplierName">Supplier name</Label>
-            <Input id="supplierName" placeholder="Enter supplier name" value={form.name}
-              onChange={(e) => handleChange("name", e.target.value)} />
+            <Input ref={registerRef(0)} id="supplierName" placeholder="Enter supplier name" value={form.name}
+              onChange={(e) => handleChange("name", e.target.value)} onKeyDown={handleKeyDown(0)} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="contactPerson">Contact person</Label>
-            <Input id="contactPerson" placeholder="Enter contact name" value={form.contactPerson}
-              onChange={(e) => handleChange("contactPerson", e.target.value)} />
+            <Input ref={registerRef(1)} id="contactPerson" placeholder="Enter contact name" value={form.contactPerson}
+              onChange={(e) => handleChange("contactPerson", e.target.value)} onKeyDown={handleKeyDown(1)} />
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" placeholder="+94 77-123-4567" value={form.phone}
-              onChange={(e) => handleChange("phone", e.target.value)} />
+            <Input ref={registerRef(2)} id="phone" placeholder="+94 77-123-4567" value={form.phone}
+              onChange={(e) => handleChange("phone", e.target.value)} onKeyDown={handleKeyDown(2)} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="supplier@example.com" value={form.email}
-              onChange={(e) => handleChange("email", e.target.value)} />
+            <Input ref={registerRef(3)} id="email" type="email" placeholder="supplier@example.com" value={form.email}
+              onChange={(e) => handleChange("email", e.target.value)} onKeyDown={handleKeyDown(3)} />
           </div>
 
           <div className="col-span-2 space-y-1.5">
@@ -98,8 +102,8 @@ export function SupplierFormDialog({ open, onOpenChange, mode, initialData, onSu
 
           <div className="col-span-2 space-y-1.5">
             <Label htmlFor="paymentTerms">Payment terms</Label>
-            <Input id="paymentTerms" placeholder="e.g., Net 30, Net 45" value={form.paymentTerms}
-              onChange={(e) => handleChange("paymentTerms", e.target.value)} />
+            <Input ref={registerRef(4)} id="paymentTerms" placeholder="e.g., Net 30, Net 45" value={form.paymentTerms}
+              onChange={(e) => handleChange("paymentTerms", e.target.value)} onKeyDown={handleKeyDown(4)} />
           </div>
         </div>
 
@@ -107,7 +111,7 @@ export function SupplierFormDialog({ open, onOpenChange, mode, initialData, onSu
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
+          <Button ref={registerRef(5)} onClick={handleSubmit} onKeyDown={handleKeyDown(5)} disabled={submitting}>
             {submitting ? "Saving..." : mode === "add" ? "Add supplier" : "Save changes"}
           </Button>
         </DialogFooter>

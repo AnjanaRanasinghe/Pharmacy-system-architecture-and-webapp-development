@@ -87,8 +87,13 @@ export default function NewPurchaseOrderPage() {
   useEffect(() => {
     if (!pendingFocusKey) return;
     const index = items.findIndex((row) => row.key === pendingFocusKey);
-    rowRefs.current[index]?.focus();
+    // Deferred to the next frame: selecting via a mouse click on a dropdown
+    // option removes that (focused) button from the DOM, and the browser resets
+    // focus to <body> as a result — that reset happens right after this effect,
+    // so an immediate focus() call here would get silently clobbered.
+    const raf = requestAnimationFrame(() => rowRefs.current[index]?.focus());
     setPendingFocusKey(null);
+    return () => cancelAnimationFrame(raf);
   }, [items, pendingFocusKey]);
 
   function clearDraft() { localStorage.removeItem(DRAFT_KEY); }

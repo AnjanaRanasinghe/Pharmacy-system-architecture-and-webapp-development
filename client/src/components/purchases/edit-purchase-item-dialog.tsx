@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils/currency";
+import { useFieldChainNav } from "@/hooks/use-field-chain-nav";
 
 export interface EditableItemFields {
   name: string;
@@ -37,6 +38,9 @@ export function EditPurchaseItemDialog({ open, onOpenChange, item, onSave }: Edi
   const [purchasedAmount, setPurchasedAmount] = useState("");
   const [sellingAmount, setSellingAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // 0 name, 1 brand, 2 reorderLevel, 3 batchNumber, 4 expiryDate, 5 quantity,
+  // 6 purchasedAmount, 7 sellingAmount, 8 Save changes button.
+  const { registerRef, handleKeyDown } = useFieldChainNav(9);
 
   useEffect(() => {
     if (!open || !item) return;
@@ -84,36 +88,36 @@ export function EditPurchaseItemDialog({ open, onOpenChange, item, onSave }: Edi
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2 space-y-1.5">
             <Label>Product name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <Input ref={registerRef(0)} value={name} onChange={(e) => setName(e.target.value)} onKeyDown={handleKeyDown(0)} />
           </div>
           <div className="col-span-2 space-y-1.5">
             <Label>Brand</Label>
-            <Input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Leave blank if generic" />
+            <Input ref={registerRef(1)} value={brand} onChange={(e) => setBrand(e.target.value)} onKeyDown={handleKeyDown(1)} placeholder="Leave blank if generic" />
           </div>
           <div className="col-span-2 space-y-1.5">
             <Label>Low stock alert level</Label>
-            <Input type="number" min={0} value={reorderLevel} onChange={(e) => setReorderLevel(e.target.value)} />
+            <Input ref={registerRef(2)} type="number" min={0} value={reorderLevel} onChange={(e) => setReorderLevel(e.target.value)} onKeyDown={handleKeyDown(2)} />
           </div>
 
           <div className="col-span-2 border-t pt-4 text-sm font-medium text-muted-foreground">This shipment</div>
 
           <div className="space-y-1.5">
             <Label>Batch #</Label>
-            <Input value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} />
+            <Input ref={registerRef(3)} value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} onKeyDown={handleKeyDown(3)} />
           </div>
           <div className="space-y-1.5">
             <Label>Expiry date</Label>
-            <Input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
+            <Input ref={registerRef(4)} type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} onKeyDown={handleKeyDown(4, { allowArrows: false })} />
           </div>
           <div className="space-y-1.5">
             <Label>Quantity</Label>
-            <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+            <Input ref={registerRef(5)} type="number" min={1} value={quantity} onChange={(e) => setQuantity(e.target.value)} onKeyDown={handleKeyDown(5)} />
           </div>
           <div />
 
           <div className="space-y-1.5">
             <Label>Purchased amount (Rs.)</Label>
-            <Input type="number" min={0} step="0.01" value={purchasedAmount} onChange={(e) => setPurchasedAmount(e.target.value)} />
+            <Input ref={registerRef(6)} type="number" min={0} step="0.01" value={purchasedAmount} onChange={(e) => setPurchasedAmount(e.target.value)} onKeyDown={handleKeyDown(6)} />
           </div>
           <div className="space-y-1.5">
             <Label className="text-muted-foreground">Purchase price / unit</Label>
@@ -124,7 +128,7 @@ export function EditPurchaseItemDialog({ open, onOpenChange, item, onSave }: Edi
 
           <div className="space-y-1.5">
             <Label>Selling amount (Rs.)</Label>
-            <Input type="number" min={0} step="0.01" value={sellingAmount} onChange={(e) => setSellingAmount(e.target.value)} />
+            <Input ref={registerRef(7)} type="number" min={0} step="0.01" value={sellingAmount} onChange={(e) => setSellingAmount(e.target.value)} onKeyDown={handleKeyDown(7)} />
           </div>
           <div className="space-y-1.5">
             <Label className="text-muted-foreground">Selling price / unit</Label>
@@ -138,7 +142,7 @@ export function EditPurchaseItemDialog({ open, onOpenChange, item, onSave }: Edi
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave}>Save changes</Button>
+          <Button ref={registerRef(8)} onClick={handleSave} onKeyDown={handleKeyDown(8)}>Save changes</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

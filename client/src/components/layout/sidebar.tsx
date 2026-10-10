@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
@@ -52,6 +52,7 @@ const linkClasses = (active: boolean) =>
 
 export function Sidebar() {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     navItems.forEach((item) => {
@@ -61,6 +62,23 @@ export function Sidebar() {
     });
     return initial;
   });
+
+  // Arrow keys move focus through whichever links/buttons are currently visible
+  // (collapsed groups' children are unmounted, so they're naturally skipped).
+  // Enter already activates a focused link/button natively — nothing extra needed.
+  function handleNavKeyDown(e: React.KeyboardEvent<HTMLElement>) {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const container = navRef.current;
+    if (!container) return;
+    const focusables = Array.from(container.querySelectorAll<HTMLElement>("a[href], button"));
+    if (focusables.length === 0) return;
+    e.preventDefault();
+    const currentIndex = focusables.indexOf(document.activeElement as HTMLElement);
+    const nextIndex = e.key === "ArrowDown"
+      ? Math.min(currentIndex + 1, focusables.length - 1)
+      : Math.max(currentIndex - 1, 0);
+    focusables[nextIndex]?.focus();
+  }
 
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r bg-white print:hidden">
@@ -74,7 +92,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+      <nav ref={navRef} onKeyDown={handleNavKeyDown} className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {navItems.map((item) => {
           if (!item.children) {
             const active = pathname === item.href;

@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Pencil, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { useSuppliers } from "@/hooks/use-suppliers";
 import { usePurchases } from "@/hooks/use-purchases";
+import { useKeyboardShortcut } from "@/hooks/use-keyboard-shortcut";
 import { ProductPicker } from "@/components/products/product-picker";
 import { NewProductWithBatchDialog, NewProductBatchResult } from "@/components/purchases/new-product-with-batch-dialog";
 import { EditPurchaseItemDialog, EditableItemFields } from "@/components/purchases/edit-purchase-item-dialog";
@@ -56,6 +58,12 @@ export default function NewPurchaseOrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const [draftSavedFlash, setDraftSavedFlash] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const rowRefs = useRef<(HTMLTableRowElement | null)[]>([]);
+  const submitRef = useRef<HTMLButtonElement>(null);
+  // Set right after adding a product, so a (post-render) effect can move
+  // keyboard focus straight onto that new row.
+  const [pendingFocusKey, setPendingFocusKey] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem(DRAFT_KEY);
@@ -76,6 +84,13 @@ export default function NewPurchaseOrderPage() {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ supplierId, orderDate, expectedDelivery, items }));
   }, [supplierId, orderDate, expectedDelivery, items]);
 
+  useEffect(() => {
+    if (!pendingFocusKey) return;
+    const index = items.findIndex((row) => row.key === pendingFocusKey);
+    rowRefs.current[index]?.focus();
+    setPendingFocusKey(null);
+  }, [items, pendingFocusKey]);
+
   function clearDraft() { localStorage.removeItem(DRAFT_KEY); }
   function handleSaveDraft() {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ supplierId, orderDate, expectedDelivery, items }));
@@ -89,8 +104,9 @@ export default function NewPurchaseOrderPage() {
   }
 
   function addExistingProduct(product: Product) {
+    const key = crypto.randomUUID();
     setItems((prev) => [...prev, {
-      key: crypto.randomUUID(),
+      key,
       productId: product.id,
       name: product.name,
       brand: product.brand,
@@ -102,11 +118,13 @@ export default function NewPurchaseOrderPage() {
       originalReorderLevel: product.reorderLevel,
       batchNumber: "", expiryDate: "", quantity: 0, purchasedAmount: 0, sellingAmount: 0,
     }]);
+    setPendingFocusKey(key);
   }
 
   function addNewProduct(result: NewProductBatchResult) {
+    const key = crypto.randomUUID();
     setItems((prev) => [...prev, {
-      key: crypto.randomUUID(),
+      key,
       productId: null,
       name: result.name,
       brand: result.brand,
@@ -116,6 +134,7 @@ export default function NewPurchaseOrderPage() {
       batchNumber: result.batchNumber, expiryDate: result.expiryDate,
       quantity: result.quantity, purchasedAmount: result.purchasedAmount, sellingAmount: result.sellingAmount,
     }]);
+    setPendingFocusKey(key);
   }
 
   function saveEdit(fields: EditableItemFields) {
@@ -125,6 +144,33 @@ export default function NewPurchaseOrderPage() {
 
   function removeRow(key: string) {
     setItems((prev) => prev.filter((row) => row.key !== key));
+  }
+
+  // Rows aren't inline-editable (details live in the Edit dialog), so arrow keys
+  // move a row "selection" instead of moving between fields: ↑/↓ change which row
+  // has focus, Enter opens it for editing, Delete removes it. Above the first row
+  // goes back to search; below the last row continues to the submit button.
+  function handleRowKeyDown(e: React.KeyboardEvent<HTMLTableRowElement>, index: number) {
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        if (index + 1 < items.length) rowRefs.current[index + 1]?.focus();
+        else submitRef.current?.focus();
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (index > 0) rowRefs.current[index - 1]?.focus();
+        else searchRef.current?.focus();
+        break;
+      case "Enter":
+        e.preventDefault();
+        setEditingKey(items[index].key);
+        break;
+      case "Delete":
+        e.preventDefault();
+        removeRow(items[index].key);
+        break;
+    }
   }
 
   function rowPrices(row: ItemRow) {
@@ -139,6 +185,7 @@ export default function NewPurchaseOrderPage() {
   const editingRow = items.find((r) => r.key === editingKey) ?? null;
 
   async function handleSubmit() {
+    if (submitting) return;
     if (!supplierId) return setError("Select a supplier.");
     if (items.length === 0) return setError("Add at least one item.");
     if (items.some((r) => !r.batchNumber.trim() || !r.expiryDate || r.quantity <= 0 || !r.purchasedAmount || !r.sellingAmount)) {
@@ -189,11 +236,20 @@ export default function NewPurchaseOrderPage() {
     }
   }
 
+  // Global, page-scoped shortcuts — F-keys fire even while typing since they
+  // never collide with normal text entry.
+  useKeyboardShortcut("F2", discardDraft, { allowInInputs: true });
+  useKeyboardShortcut("F4", () => searchRef.current?.focus(), { allowInInputs: true });
+  useKeyboardShortcut("F9", () => { handleSubmit(); }, { allowInInputs: true });
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">New purchase order</h1>
-        <p className="text-sm text-muted-foreground">Order stock in bulk from a supplier</p>
+        <p className="text-sm text-muted-foreground">
+          Order stock in bulk from a supplier — <kbd className="rounded border px-1">F2</kbd> clear order ·{" "}
+          <kbd className="rounded border px-1">F4</kbd> focus search · <kbd className="rounded border px-1">F9</kbd> create order
+        </p>
       </div>
 
       {draftRestored && (
@@ -226,6 +282,7 @@ export default function NewPurchaseOrderPage() {
         <div className="relative">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <ProductPicker
+            ref={searchRef}
             onSelect={addExistingProduct}
             onCreateNew={(seed) => { setNewProductSeed(seed); setNewProductOpen(true); }}
           />
@@ -252,10 +309,19 @@ export default function NewPurchaseOrderPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((row) => {
+                {items.map((row, index) => {
                   const { purchasePrice, sellingPrice } = rowPrices(row);
                   return (
-                    <tr key={row.key} className="border-b last:border-0">
+                    <tr
+                      key={row.key}
+                      ref={(el) => { rowRefs.current[index] = el; }}
+                      tabIndex={0}
+                      onKeyDown={(e) => handleRowKeyDown(e, index)}
+                      className={cn(
+                        "border-b outline-none last:border-0",
+                        "focus:bg-blue-50 focus:ring-2 focus:ring-inset focus:ring-blue-400"
+                      )}
+                    >
                       <td className="py-2 pr-2 whitespace-nowrap">
                         <div className="font-medium">{row.name}</div>
                         <div className="text-xs text-muted-foreground">{row.brand}</div>
@@ -280,6 +346,10 @@ export default function NewPurchaseOrderPage() {
                 })}
               </tbody>
             </table>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Tip: use ↑ ↓ to move between items, Enter to edit, Delete to remove.
+              ↓ from the last row continues to Create purchase order.
+            </p>
           </div>
         )}
 
@@ -296,8 +366,14 @@ export default function NewPurchaseOrderPage() {
         {draftSavedFlash && <span className="text-sm text-green-600">Draft saved</span>}
         <Button variant="outline" onClick={() => router.push("/purchases")}>Cancel</Button>
         <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50" onClick={handleSaveDraft}>Save draft</Button>
-        <Button className="bg-blue-600 text-white hover:bg-blue-700" onClick={handleSubmit} disabled={submitting}>
-          {submitting ? "Saving..." : "Create purchase order"}
+        <Button
+          ref={submitRef}
+          className="bg-blue-600 text-white hover:bg-blue-700"
+          onClick={handleSubmit}
+          disabled={submitting}
+          onKeyDown={(e) => { if (e.key === "ArrowUp") { e.preventDefault(); rowRefs.current[items.length - 1]?.focus(); } }}
+        >
+          {submitting ? "Saving..." : "Create purchase order (F9)"}
         </Button>
       </div>
 

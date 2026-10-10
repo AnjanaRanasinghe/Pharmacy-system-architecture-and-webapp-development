@@ -49,6 +49,8 @@ export default function DashboardPage() {
         <p className="text-sm text-muted-foreground">Overview of your pharmacy operations</p>
       </div>
 
+      <QuickAccess />
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Total Medicines" value={dashboard.totalMedicines.toLocaleString()}
@@ -68,8 +70,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      <QuickAccess />
-
+      
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SalesTrendChart data={dashboard.salesVsPurchasesTrend} />
         <CategoryPieChart data={dashboard.categoryDistribution} />

@@ -1,17 +1,56 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Plus, Printer } from "lucide-react";
+import { ChevronDown, Plus, Printer, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSales } from "@/hooks/use-sales";
 import { formatCurrency } from "@/lib/utils/currency";
 import { groupSaleItemsForDisplay, lineDiscountAmount, lineNetAmount } from "@/lib/utils/sale-items";
 import { cn } from "@/lib/utils";
+import { toDateInputValue } from "@/lib/utils/date";
+
+const PAYMENT_METHODS = ["CASH", "CARD", "OTHER"] as const;
 
 export default function SalesInvoicesPage() {
   const { sales, loading, error, refetch } = useSales();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [invoiceQuery, setInvoiceQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [cashierFilter, setCashierFilter] = useState("ALL");
+  const [paymentFilter, setPaymentFilter] = useState("ALL");
+
+  function cashierLabel(s: { user?: { name: string | null; email: string } }) {
+    return s.user?.name || s.user?.email || "Unknown";
+  }
+
+  const cashierOptions = useMemo(() => {
+    const names = new Set(sales.map(cashierLabel));
+    return Array.from(names).sort();
+  }, [sales]);
+
+  const filteredSales = useMemo(() => {
+    const invoiceQueryLower = invoiceQuery.trim().toLowerCase();
+    return sales.filter((s) => {
+      if (invoiceQueryLower && !s.invoiceNumber.toLowerCase().includes(invoiceQueryLower)) return false;
+      if (dateFilter && toDateInputValue(new Date(s.soldAt)) !== dateFilter) return false;
+      if (cashierFilter !== "ALL" && cashierLabel(s) !== cashierFilter) return false;
+      if (paymentFilter !== "ALL" && s.paymentMethod !== paymentFilter) return false;
+      return true;
+    });
+  }, [sales, invoiceQuery, dateFilter, cashierFilter, paymentFilter]);
+
+  const hasActiveFilters = Boolean(invoiceQuery || dateFilter || cashierFilter !== "ALL" || paymentFilter !== "ALL");
+
+  function clearFilters() {
+    setInvoiceQuery("");
+    setDateFilter("");
+    setCashierFilter("ALL");
+    setPaymentFilter("ALL");
+  }
 
   return (
     <div className="space-y-6">
@@ -23,6 +62,60 @@ export default function SalesInvoicesPage() {
         <Link href="/sales/new">
           <Button><Plus className="mr-1.5 h-4 w-4" /> New sale invoice</Button>
         </Link>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-white p-4">
+        <div className="relative w-44 space-y-1.5">
+          <Label htmlFor="filterInvoice">Invoice #</Label>
+          <Input
+            id="filterInvoice"
+            value={invoiceQuery}
+            onChange={(e) => setInvoiceQuery(e.target.value)}
+            placeholder="e.g. INV-2026-0012"
+            className="pr-7"
+          />
+          {invoiceQuery && (
+            <button
+              type="button"
+              onClick={() => setInvoiceQuery("")}
+              aria-label="Clear invoice filter"
+              className="absolute right-1.5 top-[34px] text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        <div className="w-40 space-y-1.5">
+          <Label htmlFor="filterDate">Date</Label>
+          <Input id="filterDate" type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
+        </div>
+
+        <div className="w-44 space-y-1.5">
+          <Label>Cashier</Label>
+          <Select value={cashierFilter} onValueChange={(v) => setCashierFilter(v ?? "ALL")}>
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All cashiers</SelectItem>
+              {cashierOptions.map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="w-36 space-y-1.5">
+          <Label>Payment</Label>
+          <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v ?? "ALL")}>
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All methods</SelectItem>
+              {PAYMENT_METHODS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {hasActiveFilters && (
+          <Button variant="outline" onClick={clearFilters}>Clear filters</Button>
+        )}
       </div>
 
       {loading && <p className="text-sm text-muted-foreground">Loading sales invoices...</p>}
@@ -38,7 +131,11 @@ export default function SalesInvoicesPage() {
         <p className="text-sm text-muted-foreground">No sales yet — completed sales will appear here.</p>
       )}
 
-      {!loading && !error && sales.length > 0 && (
+      {!loading && !error && sales.length > 0 && filteredSales.length === 0 && (
+        <p className="text-sm text-muted-foreground">No invoices match the selected filters.</p>
+      )}
+
+      {!loading && !error && filteredSales.length > 0 && (
         <div className="rounded-lg border bg-white">
           <table className="w-full text-sm">
             <thead>
@@ -58,7 +155,7 @@ export default function SalesInvoicesPage() {
               </tr>
             </thead>
             <tbody>
-              {sales.map((s) => {
+              {filteredSales.map((s) => {
                 const isOpen = expandedId === s.id;
                 const cashBalance = s.cashTendered != null ? s.cashTendered - s.totalAmount : null;
                 const totalDiscount = s.subtotalAmount - s.totalAmount;

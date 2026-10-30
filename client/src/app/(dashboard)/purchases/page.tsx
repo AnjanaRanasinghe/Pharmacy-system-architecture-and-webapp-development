@@ -1,17 +1,52 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Plus } from "lucide-react";
+import { ChevronDown, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePurchases } from "@/hooks/use-purchases";
 import { formatCurrency } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils";
+import { toDateInputValue } from "@/lib/utils/date";
+
+const PURCHASE_STATUSES = ["PENDING", "RECEIVED", "CANCELLED"] as const;
 
 export default function PurchaseOrdersPage() {
   const { purchases, loading, error, refetch } = usePurchases();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [poQuery, setPoQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [supplierFilter, setSupplierFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
+  const supplierOptions = useMemo(() => {
+    const names = new Set(purchases.map((p) => p.supplier?.name).filter(Boolean) as string[]);
+    return Array.from(names).sort();
+  }, [purchases]);
+
+  const filteredPurchases = useMemo(() => {
+    const poQueryLower = poQuery.trim().toLowerCase();
+    return purchases.filter((p) => {
+      if (poQueryLower && !p.poNumber.toLowerCase().includes(poQueryLower)) return false;
+      if (dateFilter && toDateInputValue(new Date(p.orderDate)) !== dateFilter) return false;
+      if (supplierFilter !== "ALL" && p.supplier?.name !== supplierFilter) return false;
+      if (statusFilter !== "ALL" && p.status !== statusFilter) return false;
+      return true;
+    });
+  }, [purchases, poQuery, dateFilter, supplierFilter, statusFilter]);
+
+  const hasActiveFilters = Boolean(poQuery || dateFilter || supplierFilter !== "ALL" || statusFilter !== "ALL");
+
+  function clearFilters() {
+    setPoQuery("");
+    setDateFilter("");
+    setSupplierFilter("ALL");
+    setStatusFilter("ALL");
+  }
 
   return (
     <div className="space-y-6">
@@ -23,6 +58,60 @@ export default function PurchaseOrdersPage() {
         <Link href="/purchases/new">
           <Button><Plus className="mr-1.5 h-4 w-4" /> New purchase order</Button>
         </Link>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-white p-4">
+        <div className="relative w-44 space-y-1.5">
+          <Label htmlFor="filterPo">PO number</Label>
+          <Input
+            id="filterPo"
+            value={poQuery}
+            onChange={(e) => setPoQuery(e.target.value)}
+            placeholder="e.g. PO-2026-012"
+            className="pr-7"
+          />
+          {poQuery && (
+            <button
+              type="button"
+              onClick={() => setPoQuery("")}
+              aria-label="Clear PO number filter"
+              className="absolute right-1.5 top-[34px] text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        <div className="w-40 space-y-1.5">
+          <Label htmlFor="filterDate">Order date</Label>
+          <Input id="filterDate" type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
+        </div>
+
+        <div className="w-44 space-y-1.5">
+          <Label>Supplier</Label>
+          <Select value={supplierFilter} onValueChange={(v) => setSupplierFilter(v ?? "ALL")}>
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All suppliers</SelectItem>
+              {supplierOptions.map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="w-36 space-y-1.5">
+          <Label>Status</Label>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "ALL")}>
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All statuses</SelectItem>
+              {PURCHASE_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {hasActiveFilters && (
+          <Button variant="outline" onClick={clearFilters}>Clear filters</Button>
+        )}
       </div>
 
       {loading && <p className="text-sm text-muted-foreground">Loading purchase orders...</p>}
@@ -38,7 +127,11 @@ export default function PurchaseOrdersPage() {
         <p className="text-sm text-muted-foreground">No purchase orders yet.</p>
       )}
 
-      {!loading && !error && purchases.length > 0 && (
+      {!loading && !error && purchases.length > 0 && filteredPurchases.length === 0 && (
+        <p className="text-sm text-muted-foreground">No purchase orders match the selected filters.</p>
+      )}
+
+      {!loading && !error && filteredPurchases.length > 0 && (
         <div className="rounded-lg border bg-white">
           <table className="w-full text-sm">
             <thead>
@@ -53,7 +146,7 @@ export default function PurchaseOrdersPage() {
               </tr>
             </thead>
             <tbody>
-              {purchases.map((p) => {
+              {filteredPurchases.map((p) => {
                 const isOpen = expandedId === p.id;
                 return (
                   <Fragment key={p.id}>

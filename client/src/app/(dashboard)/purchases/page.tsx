@@ -2,11 +2,10 @@
 
 import { Fragment, useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Plus, X } from "lucide-react";
+import { Calendar, ChevronDown, Hash, Plus, SlidersHorizontal, Tag, Truck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePurchases } from "@/hooks/use-purchases";
 import { formatCurrency } from "@/lib/utils/currency";
@@ -60,57 +59,73 @@ export default function PurchaseOrdersPage() {
         </Link>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-white p-4">
-        <div className="relative w-44 space-y-1.5">
-          <Label htmlFor="filterPo">PO number</Label>
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-blue-100 bg-blue-50/60 p-2.5">
+        <span className="flex items-center gap-1.5 pl-1 text-sm font-medium text-blue-700">
+          <SlidersHorizontal className="h-4 w-4" />
+          Filters
+        </span>
+
+        <div className="relative">
+          <Hash className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-blue-400" />
           <Input
-            id="filterPo"
             value={poQuery}
             onChange={(e) => setPoQuery(e.target.value)}
-            placeholder="e.g. PO-2026-012"
-            className="pr-7"
+            placeholder="PO number"
+            className="h-9 w-36 rounded-lg border-blue-100 bg-white pl-8 pr-7 shadow-sm focus-visible:border-blue-400 focus-visible:ring-blue-200"
           />
           {poQuery && (
             <button
               type="button"
               onClick={() => setPoQuery("")}
               aria-label="Clear PO number filter"
-              className="absolute right-1.5 top-[34px] text-muted-foreground hover:text-foreground"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
 
-        <div className="w-40 space-y-1.5">
-          <Label htmlFor="filterDate">Order date</Label>
-          <Input id="filterDate" type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
+        <div className="relative">
+          <Calendar className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-blue-400" />
+          <Input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="h-9 w-[9.5rem] rounded-lg border-blue-100 bg-white pl-8 shadow-sm focus-visible:border-blue-400 focus-visible:ring-blue-200"
+          />
         </div>
 
-        <div className="w-44 space-y-1.5">
-          <Label>Supplier</Label>
-          <Select value={supplierFilter} onValueChange={(v) => setSupplierFilter(v ?? "ALL")}>
-            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All suppliers</SelectItem>
-              {supplierOptions.map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+        <Select value={supplierFilter} onValueChange={(v) => setSupplierFilter(v ?? "ALL")}>
+          <SelectTrigger className="h-9 gap-1.5 rounded-lg border-blue-100 bg-white px-2.5 shadow-sm">
+            <Truck className="h-3.5 w-3.5 shrink-0 text-blue-400" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All suppliers</SelectItem>
+            {supplierOptions.map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+          </SelectContent>
+        </Select>
 
-        <div className="w-36 space-y-1.5">
-          <Label>Status</Label>
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "ALL")}>
-            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All statuses</SelectItem>
-              {PURCHASE_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "ALL")}>
+          <SelectTrigger className="h-9 gap-1.5 rounded-lg border-blue-100 bg-white px-2.5 shadow-sm">
+            <Tag className="h-3.5 w-3.5 shrink-0 text-blue-400" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All statuses</SelectItem>
+            {PURCHASE_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
 
         {hasActiveFilters && (
-          <Button variant="outline" onClick={clearFilters}>Clear filters</Button>
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="flex h-9 items-center gap-1 rounded-lg px-2.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100"
+          >
+            <X className="h-3.5 w-3.5" />
+            Clear
+          </button>
         )}
       </div>
 

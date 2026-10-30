@@ -9,6 +9,7 @@ import { purchasesRouter } from "./modules/purchases/purchases.routes";
 import { suppliersRouter } from "./modules/suppliers/suppliers.routes";
 import { salesRouter } from "./modules/sales/sales.routes";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes";
+import { reportsRouter } from "./modules/reports/reports.routes";
 import { AppError } from "./common/errors/app-error";
 
 export const app = express();
@@ -27,6 +28,7 @@ app.use("/api/purchases", purchasesRouter);
 app.use("/api/suppliers", suppliersRouter);
 app.use("/api/sales", salesRouter);
 app.use("/api/dashboard", dashboardRouter);
+app.use("/api/reports", reportsRouter);
 
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (err instanceof AppError) {

@@ -16,15 +16,16 @@ import { useFieldChainNav } from "@/hooks/use-field-chain-nav";
 interface ProductFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  mode: "add" | "edit";
-  initialValue?: string;
-  initialData?: Product | null;
+  initialData: Product | null;
   onSaved: (product: Product) => void;
 }
 
-export function ProductFormDialog({ open, onOpenChange, mode, initialValue = "", initialData, onSaved }: ProductFormDialogProps) {
+// Editing only — a product can't exist without a stock batch (cost, expiry, quantity
+// all live there), so new medicines are only ever created via a Purchase Order, which
+// creates the product and its first batch together. This dialog just lets you correct
+// an existing product's details afterwards.
+export function ProductFormDialog({ open, onOpenChange, initialData, onSaved }: ProductFormDialogProps) {
   const { categories } = useCategories();
-  const isBarcodeLike = /^[0-9]{6,}$/.test(initialValue);
 
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
@@ -39,26 +40,18 @@ export function ProductFormDialog({ open, onOpenChange, mode, initialValue = "",
   const { registerRef, handleKeyDown } = useFieldChainNav(6);
 
   useEffect(() => {
-    if (!open) return;
-    if (mode === "edit" && initialData) {
-      setName(initialData.name);
-      setBrand(initialData.brand);
-      setBarcode(initialData.barcode || "");
-      setCategoryId(initialData.categoryId);
-      setSellingPrice(String(initialData.sellingPrice));
-      setReorderLevel(String(initialData.reorderLevel ?? 20));
-    } else {
-      setName(isBarcodeLike ? "" : initialValue);
-      setBrand("");
-      setBarcode(isBarcodeLike ? initialValue : "");
-      setCategoryId("");
-      setSellingPrice("");
-      setReorderLevel("20");
-    }
+    if (!open || !initialData) return;
+    setName(initialData.name);
+    setBrand(initialData.brand);
+    setBarcode(initialData.barcode || "");
+    setCategoryId(initialData.categoryId);
+    setSellingPrice(String(initialData.sellingPrice));
+    setReorderLevel(String(initialData.reorderLevel ?? 20));
     setError(null);
-  }, [open, mode, initialData, initialValue, isBarcodeLike]);
+  }, [open, initialData]);
 
   async function handleSubmit() {
+    if (!initialData) return;
     if (!name.trim() || !categoryId || !sellingPrice) {
       setError("Name, category, and selling price are required.");
       return;
@@ -74,10 +67,7 @@ export function ProductFormDialog({ open, onOpenChange, mode, initialValue = "",
         sellingPrice: Number(sellingPrice),
         reorderLevel: Number(reorderLevel) || 20,
       };
-      const saved =
-        mode === "edit" && initialData
-          ? await productsApi.update(initialData.id, payload)
-          : await productsApi.create(payload);
+      const saved = await productsApi.update(initialData.id, payload);
       onSaved(saved);
       onOpenChange(false);
     } catch (err) {
@@ -91,14 +81,8 @@ export function ProductFormDialog({ open, onOpenChange, mode, initialValue = "",
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{mode === "edit" ? "Edit medicine" : "Add new medicine"}</DialogTitle>
-          <DialogDescription>
-            {mode === "edit"
-              ? "Update this product's details"
-              : isBarcodeLike
-              ? "This barcode isn't in the system yet — add the product it belongs to."
-              : "Enter the details of the new medicine"}
-          </DialogDescription>
+          <DialogTitle>Edit medicine</DialogTitle>
+          <DialogDescription>Update this product&apos;s details</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -145,7 +129,7 @@ export function ProductFormDialog({ open, onOpenChange, mode, initialValue = "",
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
           <Button ref={registerRef(5)} onClick={handleSubmit} onKeyDown={handleKeyDown(5)} disabled={submitting}>
-            {submitting ? "Saving..." : mode === "edit" ? "Save changes" : "Add medicine"}
+            {submitting ? "Saving..." : "Save changes"}
           </Button>
         </DialogFooter>
       </DialogContent>

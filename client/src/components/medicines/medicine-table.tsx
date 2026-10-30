@@ -75,14 +75,7 @@ export function MedicineTable({ medicines, onEdit, onDelete }: MedicineTableProp
                     <Button variant="ghost" size="icon" aria-label="Edit medicine" onClick={() => onEdit(m)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Delete medicine"
-                      onClick={() => {
-                        if (confirm(`Delete "${m.name}" (${m.brand})? This can't be undone.`)) onDelete(m.id);
-                      }}
-                    >
+                    <Button variant="ghost" size="icon" aria-label="Delete medicine" onClick={() => onDelete(m.id)}>
                       <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
                   </div>

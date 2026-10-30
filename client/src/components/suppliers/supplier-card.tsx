@@ -28,14 +28,7 @@ export function SupplierCard({ supplier, onEdit, onDelete }: SupplierCardProps) 
             <Button variant="ghost" size="icon" aria-label="Edit supplier" onClick={() => onEdit(supplier)}>
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Delete supplier"
-              onClick={() => {
-                if (confirm(`Delete supplier "${supplier.name}"? This can't be undone.`)) onDelete(supplier.id);
-              }}
-            >
+            <Button variant="ghost" size="icon" aria-label="Delete supplier" onClick={() => onDelete(supplier.id)}>
               <Trash2 className="h-4 w-4 text-red-500" />
             </Button>
           </div>

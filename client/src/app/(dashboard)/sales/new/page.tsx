@@ -10,6 +10,7 @@ import { useMedicines } from "@/hooks/use-medicines";
 import { useSales } from "@/hooks/use-sales";
 import { useKeyboardShortcut } from "@/hooks/use-keyboard-shortcut";
 import { MedicineSearchBar } from "@/components/sales/medicine-search-bar";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/utils/currency";
 import { ProductInventoryRow } from "@/types/product";
 
@@ -56,6 +57,7 @@ export default function NewSaleInvoicePage() {
   const [cashTendered, setCashTendered] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   // Set right after a scan/search add, so a (post-render) effect can jump
   // keyboard focus straight to that row's Qty field.
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null);
@@ -213,14 +215,21 @@ export default function NewSaleInvoicePage() {
     }
   }
 
-  function handleNewSale() {
-    if (submitting) return;
-    if (rows.length > 0 && !confirm("Clear the current cart? This can't be undone.")) return;
+  function clearSale() {
     setRows([]);
     setBillDiscountPercent("");
     setCashTendered("");
     setError(null);
     searchRef.current?.focus();
+  }
+
+  function handleNewSale() {
+    if (submitting) return;
+    if (rows.length > 0) {
+      setConfirmClearOpen(true);
+      return;
+    }
+    clearSale();
   }
 
   // Global, page-scoped shortcuts — F-keys fire even while typing since they
@@ -390,6 +399,15 @@ export default function NewSaleInvoicePage() {
           </Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmClearOpen}
+        onOpenChange={setConfirmClearOpen}
+        title="Clear cart"
+        description="Clear the current cart? This can't be undone."
+        confirmLabel="Clear"
+        onConfirm={clearSale}
+      />
     </div>
   );
 }

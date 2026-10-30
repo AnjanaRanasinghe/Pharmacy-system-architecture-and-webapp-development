@@ -14,6 +14,7 @@ import { ProductPicker } from "@/components/products/product-picker";
 import { NewProductWithBatchDialog, NewProductBatchResult } from "@/components/purchases/new-product-with-batch-dialog";
 import { EditPurchaseItemDialog, EditableItemFields } from "@/components/purchases/edit-purchase-item-dialog";
 import { SupplierCombobox } from "@/components/suppliers/supplier-combobox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatCurrency } from "@/lib/utils/currency";
 import { Product } from "@/types/product";
 
@@ -58,6 +59,7 @@ export default function NewPurchaseOrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const [draftSavedFlash, setDraftSavedFlash] = useState(false);
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const rowRefs = useRef<(HTMLTableRowElement | null)[]>([]);
   const submitRef = useRef<HTMLButtonElement>(null);
@@ -102,12 +104,18 @@ export default function NewPurchaseOrderPage() {
     setDraftSavedFlash(true);
     setTimeout(() => setDraftSavedFlash(false), 2000);
   }
-  function discardDraft() {
-    const hasContent = items.length > 0 || supplierId || expectedDelivery;
-    if (hasContent && !confirm("Clear the current order? This can't be undone.")) return;
+  function clearOrder() {
     clearDraft();
     setSupplierId(""); setExpectedDelivery(""); setItems([]);
     setDraftRestored(false);
+  }
+  function discardDraft() {
+    const hasContent = items.length > 0 || supplierId || expectedDelivery;
+    if (hasContent) {
+      setConfirmClearOpen(true);
+      return;
+    }
+    clearOrder();
   }
 
   function addExistingProduct(product: Product) {
@@ -397,6 +405,15 @@ export default function NewPurchaseOrderPage() {
         onOpenChange={(open) => { if (!open) setEditingKey(null); }}
         item={editingRow}
         onSave={saveEdit}
+      />
+
+      <ConfirmDialog
+        open={confirmClearOpen}
+        onOpenChange={setConfirmClearOpen}
+        title="Clear order"
+        description="Clear the current order? This can't be undone."
+        confirmLabel="Clear"
+        onConfirm={clearOrder}
       />
     </div>
   );

@@ -21,14 +21,7 @@ export function CategoryCard({ category, onEdit, onDelete }: CategoryCardProps) 
             <Button variant="ghost" size="icon" aria-label="Edit category" onClick={() => onEdit(category)}>
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Delete category"
-              onClick={() => {
-                if (confirm(`Delete category "${category.name}"? This can't be undone.`)) onDelete(category.id);
-              }}
-            >
+            <Button variant="ghost" size="icon" aria-label="Delete category" onClick={() => onDelete(category.id)}>
               <Trash2 className="h-4 w-4 text-red-500" />
             </Button>
           </div>

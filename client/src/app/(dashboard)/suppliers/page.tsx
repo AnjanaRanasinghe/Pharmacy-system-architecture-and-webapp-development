@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SupplierCard } from "@/components/suppliers/supplier-card";
 import { SupplierFormDialog } from "@/components/suppliers/supplier-form-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useSuppliers } from "@/hooks/use-suppliers";
 import { Supplier } from "@/types/supplier";
 
@@ -14,6 +15,14 @@ export default function SuppliersPage() {
   const [search, setSearch] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  function handleConfirmDelete() {
+    if (!deletingSupplier) return;
+    setDeleteError(null);
+    deleteSupplier(deletingSupplier.id).catch((err) => setDeleteError(err.message));
+  }
 
   const filtered = suppliers.filter((s) =>
     [s.name, s.contactPerson, s.email].some((field) => field.toLowerCase().includes(search.toLowerCase()))
@@ -40,6 +49,8 @@ export default function SuppliersPage() {
         </div>
       )}
 
+      {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
+
       {!loading && !error && (
         <>
           <div className="relative">
@@ -65,7 +76,7 @@ export default function SuppliersPage() {
                   key={supplier.id}
                   supplier={supplier}
                   onEdit={setEditingSupplier}
-                  onDelete={(id) => deleteSupplier(id).catch((err) => alert(err.message))}
+                  onDelete={() => { setDeleteError(null); setDeletingSupplier(supplier); }}
                 />
               ))}
             </div>
@@ -81,6 +92,14 @@ export default function SuppliersPage() {
         onOpenChange={(open) => !open && setEditingSupplier(null)}
         initialData={editingSupplier}
         onSubmit={(values) => editingSupplier ? updateSupplier(editingSupplier.id, values) : Promise.resolve()}
+      />
+
+      <ConfirmDialog
+        open={deletingSupplier !== null}
+        onOpenChange={(open) => !open && setDeletingSupplier(null)}
+        title="Delete supplier"
+        description={`Delete supplier "${deletingSupplier?.name}"? This can't be undone.`}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );

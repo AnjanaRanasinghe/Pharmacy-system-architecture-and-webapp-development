@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryCard } from "@/components/categories/category-card";
 import { CategoryFormDialog } from "@/components/categories/category-form-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useCategories } from "@/hooks/use-categories";
 import { Category } from "@/types/category";
 
@@ -12,6 +13,14 @@ export default function CategoriesPage() {
   const { categories, loading, error, addCategory, updateCategory, deleteCategory, refetch } = useCategories();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  function handleConfirmDelete() {
+    if (!deletingCategory) return;
+    setDeleteError(null);
+    deleteCategory(deletingCategory.id).catch((err) => setDeleteError(err.message));
+  }
 
   return (
     <div className="space-y-6">
@@ -34,6 +43,8 @@ export default function CategoriesPage() {
         </div>
       )}
 
+      {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
+
       {!loading && !error && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {categories.map((category) => (
@@ -41,7 +52,7 @@ export default function CategoriesPage() {
               key={category.id}
               category={category}
               onEdit={setEditingCategory}
-              onDelete={(id) => deleteCategory(id).catch((err) => alert(err.message))}
+              onDelete={() => { setDeleteError(null); setDeletingCategory(category); }}
             />
           ))}
         </div>
@@ -55,6 +66,14 @@ export default function CategoriesPage() {
         onOpenChange={(open) => !open && setEditingCategory(null)}
         initialData={editingCategory}
         onSubmit={(values) => editingCategory ? updateCategory(editingCategory.id, values) : Promise.resolve()}
+      />
+
+      <ConfirmDialog
+        open={deletingCategory !== null}
+        onOpenChange={(open) => !open && setDeletingCategory(null)}
+        title="Delete category"
+        description={`Delete category "${deletingCategory?.name}"? This can't be undone.`}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );

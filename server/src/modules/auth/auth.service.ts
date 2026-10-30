@@ -7,6 +7,12 @@ const SALT_ROUNDS = 10;
 
 export const authService = {
   async register(email: string, password: string) {
+    // This is a single-admin shop system with no user-management UI, so open sign-up
+    // would otherwise let anyone who finds the login page create themselves a full
+    // ADMIN account. Registration only works once, to bootstrap that first account.
+    const userCount = await prisma.user.count();
+    if (userCount > 0) throw new Error("Registration is closed. Contact the pharmacy admin for access.");
+
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) throw new Error("An account with this email already exists");
 

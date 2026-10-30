@@ -1,4 +1,5 @@
 import { prisma } from "../../config/db";
+import { AppError } from "../../common/errors/app-error";
 
 interface ProductInput {
   name: string;
@@ -43,10 +44,15 @@ export const productsService = {
     return prisma.product.findFirst({ where: { barcode, isActive: true } });
   },
 
-  create(data: ProductInput) {
-    return prisma.product.create({
-      data: { ...data, barcode: data.barcode?.trim() || generateInternalBarcode() },
-    });
+  async create(data: ProductInput) {
+    try {
+      return await prisma.product.create({
+        data: { ...data, barcode: data.barcode?.trim() || generateInternalBarcode() },
+      });
+    } catch (err: any) {
+      if (err.code === "P2002") throw new AppError("That barcode is already in use by another product.");
+      throw err;
+    }
   },
 
   async listWithStock() {
@@ -80,11 +86,16 @@ export const productsService = {
   });
 },
 
-  update(id: string, data: ProductInput) {
-    return prisma.product.update({
-      where: { id },
-      data: { ...data, barcode: data.barcode?.trim() || undefined },
-    });
+  async update(id: string, data: ProductInput) {
+    try {
+      return await prisma.product.update({
+        where: { id },
+        data: { ...data, barcode: data.barcode?.trim() || undefined },
+      });
+    } catch (err: any) {
+      if (err.code === "P2002") throw new AppError("That barcode is already in use by another product.");
+      throw err;
+    }
   },
 
   async remove(id: string) {

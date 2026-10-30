@@ -1,8 +1,13 @@
 import { Request, Response } from "express";
 import { reportsService } from "./reports.service";
+import { AppError } from "../../common/errors/app-error";
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function dateParam(v: unknown): string | undefined {
-  return typeof v === "string" && v ? v : undefined;
+  if (typeof v !== "string" || !v) return undefined;
+  if (!DATE_RE.test(v)) throw new AppError(`"${v}" isn't a valid date — expected YYYY-MM-DD.`);
+  return v;
 }
 
 export const reportsController = {

@@ -1,4 +1,5 @@
 import { prisma } from "../../config/db";
+import { AppError } from "../../common/errors/app-error";
 
 interface SupplierInput {
   name: string;
@@ -28,5 +29,14 @@ export const suppliersService = {
   },
   create: (data: SupplierInput) => prisma.supplier.create({ data }),
   update: (id: string, data: SupplierInput) => prisma.supplier.update({ where: { id }, data }),
-  remove: (id: string) => prisma.supplier.delete({ where: { id } }),
+  async remove(id: string) {
+    try {
+      return await prisma.supplier.delete({ where: { id } });
+    } catch (err: any) {
+      if (err.code === "P2003") {
+        throw new AppError("This supplier has purchase history or linked medicines. It can't be deleted.");
+      }
+      throw err;
+    }
+  },
 };

@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Truck, Pencil, Trash2, Phone, Mail, MapPin } from "lucide-react";
 import { Supplier } from "@/types/supplier";
+import { formatCurrency } from "@/lib/utils/currency";
 
 interface SupplierCardProps {
   supplier: Supplier;
@@ -27,7 +28,14 @@ export function SupplierCard({ supplier, onEdit, onDelete }: SupplierCardProps) 
             <Button variant="ghost" size="icon" aria-label="Edit supplier" onClick={() => onEdit(supplier)}>
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" aria-label="Delete supplier" onClick={() => onDelete(supplier.id)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Delete supplier"
+              onClick={() => {
+                if (confirm(`Delete supplier "${supplier.name}"? This can't be undone.`)) onDelete(supplier.id);
+              }}
+            >
               <Trash2 className="h-4 w-4 text-red-500" />
             </Button>
           </div>
@@ -46,7 +54,7 @@ export function SupplierCard({ supplier, onEdit, onDelete }: SupplierCardProps) 
           </div>
           <div className="text-right">
             <p className="text-muted-foreground">Total purchases</p>
-            <p className="font-semibold text-green-600">${supplier.totalPurchases.toLocaleString()}</p>
+            <p className="font-semibold text-green-600">{formatCurrency(supplier.totalPurchases)}</p>
           </div>
         </div>
       </CardContent>

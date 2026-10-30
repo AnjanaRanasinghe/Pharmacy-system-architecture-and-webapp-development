@@ -113,15 +113,27 @@ export const notificationsService = {
     return { items, unreadCount };
   },
 
-  markRead(id: string) {
-    return prisma.notification.update({ where: { id }, data: { isRead: true } });
+  async markRead(id: string) {
+    try {
+      return await prisma.notification.update({ where: { id }, data: { isRead: true } });
+    } catch (err: any) {
+      // Already gone (e.g. its condition resolved and sync() removed it, or a
+      // double-click) — nothing left to mark, which is the outcome we wanted anyway.
+      if (err.code === "P2025") return null;
+      throw err;
+    }
   },
 
   markAllRead() {
     return prisma.notification.updateMany({ where: { isRead: false }, data: { isRead: true } });
   },
 
-  dismiss(id: string) {
-    return prisma.notification.delete({ where: { id } });
+  async dismiss(id: string) {
+    try {
+      return await prisma.notification.delete({ where: { id } });
+    } catch (err: any) {
+      if (err.code === "P2025") return null;
+      throw err;
+    }
   },
 };

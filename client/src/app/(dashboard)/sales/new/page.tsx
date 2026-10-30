@@ -43,7 +43,7 @@ function rowNet(row: SaleRow) {
 
 export default function NewSaleInvoicePage() {
   const router = useRouter();
-  const { medicines, loading } = useMedicines();
+  const { medicines, loading, error: medicinesError, refetch: refetchMedicines } = useMedicines();
   const { createSale } = useSales();
   const searchRef = useRef<HTMLInputElement>(null);
   const cellRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -215,6 +215,7 @@ export default function NewSaleInvoicePage() {
 
   function handleNewSale() {
     if (submitting) return;
+    if (rows.length > 0 && !confirm("Clear the current cart? This can't be undone.")) return;
     setRows([]);
     setBillDiscountPercent("");
     setCashTendered("");
@@ -241,6 +242,12 @@ export default function NewSaleInvoicePage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-4 rounded-lg border bg-white p-6 lg:col-span-2">
           {loading && <p className="text-sm text-muted-foreground">Loading medicines...</p>}
+          {!loading && medicinesError && (
+            <div className="flex items-center justify-between rounded-md bg-red-50 px-4 py-2 text-sm text-red-600">
+              <span>Couldn&apos;t load medicines: {medicinesError}</span>
+              <Button variant="outline" size="sm" onClick={refetchMedicines}>Retry</Button>
+            </div>
+          )}
           <MedicineSearchBar ref={searchRef} medicines={medicines} onAdd={addItem} />
 
           {rows.length === 0 && (

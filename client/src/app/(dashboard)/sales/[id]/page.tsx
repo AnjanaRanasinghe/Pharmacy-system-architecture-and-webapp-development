@@ -26,14 +26,16 @@ export default function SaleInvoicePage() {
   }, [params.id]);
 
   useEffect(() => {
-    if (sale && searchParams.get("print") === "1") {
+    if (sale && settings && searchParams.get("print") === "1") {
       const timer = setTimeout(() => window.print(), 300);
       return () => clearTimeout(timer);
     }
-  }, [sale, searchParams]);
+  }, [sale, settings, searchParams]);
 
   if (error) return <p className="text-sm text-red-500">{error}</p>;
-  if (!sale) return <p className="text-sm text-muted-foreground">Loading invoice...</p>;
+  // Wait on settings too — the receipt header (pharmacy name/address) comes from
+  // there, and auto-print must never fire before it's loaded.
+  if (!sale || !settings) return <p className="text-sm text-muted-foreground">Loading invoice...</p>;
 
   const lines = groupSaleItemsForDisplay(sale.items);
   const discountAmount = sale.subtotalAmount - sale.totalAmount;
@@ -54,9 +56,9 @@ export default function SaleInvoicePage() {
 
       <div className="mx-auto w-[302px] rounded-lg border bg-white p-4 font-mono text-xs shadow-sm print:w-[80mm] print:rounded-none print:border-0 print:p-0 print:shadow-none">
         <div className="text-center">
-          <p className="text-sm font-bold">{(settings?.name || "PHARMACY").toUpperCase()}</p>
-          {settings?.address && <p>{settings.address}</p>}
-          {settings?.whatsapp && <p>WhatsApp {settings.whatsapp}</p>}
+          <p className="text-sm font-bold">{settings.name.toUpperCase()}</p>
+          {settings.address && <p>{settings.address}</p>}
+          {settings.whatsapp && <p>WhatsApp {settings.whatsapp}</p>}
         </div>
 
         <p className="mt-2 text-center font-bold">INVOICE</p>

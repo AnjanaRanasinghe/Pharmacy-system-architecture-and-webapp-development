@@ -75,9 +75,20 @@ export default function NotificationsPage() {
             return (
               <div
                 key={n.id}
-                className={cn("relative flex items-start gap-3 rounded-lg border p-4", classes, !n.isRead && "shadow-sm")}
+                className={cn(
+                  "relative flex items-start gap-3 rounded-lg border p-4",
+                  classes,
+                  !n.isRead && "shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                )}
                 onClick={() => !n.isRead && markRead(n.id)}
+                onKeyDown={(e) => {
+                  if (!n.isRead && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    markRead(n.id);
+                  }
+                }}
                 role={!n.isRead ? "button" : undefined}
+                tabIndex={!n.isRead ? 0 : undefined}
               >
                 <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", iconColor)} />
                 <div className="flex-1">

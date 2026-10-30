@@ -44,7 +44,7 @@ const DRAFT_KEY = "draft:new-purchase-order";
 
 export default function NewPurchaseOrderPage() {
   const router = useRouter();
-  const { suppliers } = useSuppliers();
+  const { suppliers, loading: suppliersLoading, error: suppliersError, refetch: refetchSuppliers } = useSuppliers();
   const { createPurchase } = usePurchases();
 
   const [supplierId, setSupplierId] = useState("");
@@ -103,6 +103,8 @@ export default function NewPurchaseOrderPage() {
     setTimeout(() => setDraftSavedFlash(false), 2000);
   }
   function discardDraft() {
+    const hasContent = items.length > 0 || supplierId || expectedDelivery;
+    if (hasContent && !confirm("Clear the current order? This can't be undone.")) return;
     clearDraft();
     setSupplierId(""); setExpectedDelivery(""); setItems([]);
     setDraftRestored(false);
@@ -261,6 +263,13 @@ export default function NewPurchaseOrderPage() {
         <div className="flex items-center justify-between rounded-md bg-blue-50 px-4 py-2 text-sm text-blue-700">
           <span>Restored your unsaved order from last time.</span>
           <button onClick={discardDraft} className="font-medium underline">Discard</button>
+        </div>
+      )}
+
+      {!suppliersLoading && suppliersError && (
+        <div className="flex items-center justify-between rounded-md bg-red-50 px-4 py-2 text-sm text-red-600">
+          <span>Couldn&apos;t load suppliers: {suppliersError}</span>
+          <Button variant="outline" size="sm" onClick={refetchSuppliers}>Retry</Button>
         </div>
       )}
 

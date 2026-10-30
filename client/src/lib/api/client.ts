@@ -1,5 +1,22 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+// Server errors arrive either as a plain string (AppError / service-thrown errors) or,
+// for zod validation failures, as `.flatten()`'s {formErrors, fieldErrors} shape —
+// extract a readable sentence either way instead of ever showing raw JSON.
+function describeError(error: unknown): string | null {
+  if (!error) return null;
+  if (typeof error === "string") return error;
+  if (typeof error === "object") {
+    const { formErrors, fieldErrors } = error as { formErrors?: string[]; fieldErrors?: Record<string, string[]> };
+    const messages = [
+      ...(formErrors ?? []),
+      ...Object.values(fieldErrors ?? {}).flat(),
+    ].filter(Boolean);
+    if (messages.length > 0) return messages.join(" ");
+  }
+  return null;
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
   credentials: "include",
@@ -9,9 +26,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const errorBody = await res.json().catch(() => null);
-    throw new Error(
-      errorBody?.error ? JSON.stringify(errorBody.error) : `Request failed with status ${res.status}`
-    );
+    throw new Error(describeError(errorBody?.error) ?? `Request failed with status ${res.status}`);
   }
 
   if (res.status === 204) return undefined as T;

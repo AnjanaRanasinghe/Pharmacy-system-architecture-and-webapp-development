@@ -1,4 +1,5 @@
 import { prisma } from "../../config/db";
+import { AppError } from "../../common/errors/app-error";
 
 interface CategoryInput {
   name: string;
@@ -27,7 +28,12 @@ export const categoriesService = {
     return prisma.category.update({ where: { id }, data });
   },
 
-  remove(id: string) {
-    return prisma.category.delete({ where: { id } });
+  async remove(id: string) {
+    try {
+      return await prisma.category.delete({ where: { id } });
+    } catch (err: any) {
+      if (err.code === "P2003") throw new AppError("This category still has medicines in it. Move or remove them first.");
+      throw err;
+    }
   },
 };

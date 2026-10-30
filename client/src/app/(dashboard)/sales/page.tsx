@@ -2,7 +2,7 @@
 
 import { Fragment, useMemo, useState } from "react";
 import Link from "next/link";
-import { Calendar, ChevronDown, Hash, Plus, Printer, SlidersHorizontal, User, Wallet, X } from "lucide-react";
+import { Calendar, ChevronDown, Hash, Plus, Printer, RotateCcw, SlidersHorizontal, User, Wallet, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,16 +11,25 @@ import { formatCurrency } from "@/lib/utils/currency";
 import { groupSaleItemsForDisplay, lineDiscountAmount, lineNetAmount } from "@/lib/utils/sale-items";
 import { cn } from "@/lib/utils";
 import { toDateInputValue } from "@/lib/utils/date";
+import { ReturnDialog, ReturnSubmitPayload } from "@/components/sales/return-dialog";
 
 const PAYMENT_METHODS = ["CASH", "CARD", "OTHER"] as const;
 
 export default function SalesInvoicesPage() {
-  const { sales, loading, error, refetch } = useSales();
+  const { sales, loading, error, refetch, createReturn } = useSales();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [invoiceQuery, setInvoiceQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [cashierFilter, setCashierFilter] = useState("ALL");
   const [paymentFilter, setPaymentFilter] = useState("ALL");
+  const [returnSaleId, setReturnSaleId] = useState<string | null>(null);
+
+  const returnSale = sales.find((s) => s.id === returnSaleId) ?? null;
+
+  async function handleReturnSubmit(payload: ReturnSubmitPayload) {
+    if (!returnSaleId) return;
+    await createReturn(returnSaleId, payload);
+  }
 
   function cashierLabel(s: { user?: { name: string | null; email: string } }) {
     return s.user?.name || s.user?.email || "Unknown";
@@ -166,6 +175,7 @@ export default function SalesInvoicesPage() {
                 <th className="p-3">Cash tend</th>
                 <th className="p-3">Cash balance</th>
                 <th className="p-3">Payment</th>
+                <th className="p-3">Status</th>
                 <th className="p-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -174,6 +184,8 @@ export default function SalesInvoicesPage() {
                 const isOpen = expandedId === s.id;
                 const cashBalance = s.cashTendered != null ? s.cashTendered - s.totalAmount : null;
                 const totalDiscount = s.subtotalAmount - s.totalAmount;
+                const totalRefunded = s.returns.reduce((sum, r) => sum + r.refundAmount, 0);
+                const isFullyReturned = totalRefunded > 0 && s.totalAmount - totalRefunded <= 0.01;
                 return (
                   <Fragment key={s.id}>
                     <tr
@@ -193,17 +205,44 @@ export default function SalesInvoicesPage() {
                       <td className="p-3">{s.cashTendered != null ? formatCurrency(s.cashTendered) : "—"}</td>
                       <td className="p-3">{cashBalance != null ? formatCurrency(cashBalance) : "—"}</td>
                       <td className="p-3">{s.paymentMethod}</td>
+                      <td className="p-3">
+                        {totalRefunded > 0 ? (
+                          <span
+                            className={cn(
+                              "rounded-full px-2.5 py-0.5 text-xs font-medium",
+                              isFullyReturned ? "bg-red-100 text-red-800" : "bg-amber-50 text-amber-700"
+                            )}
+                          >
+                            {isFullyReturned ? "Fully returned" : "Partially returned"}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
                       <td className="p-3 text-right">
-                        <Link href={`/sales/${s.id}?print=1`} onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" aria-label="Print invoice">
-                            <Printer className="h-4 w-4" />
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Return items"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setReturnSaleId(s.id);
+                            }}
+                          >
+                            <RotateCcw className="h-4 w-4" />
                           </Button>
-                        </Link>
+                          <Link href={`/sales/${s.id}?print=1`} onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" aria-label="Print invoice">
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                     {isOpen && (
                       <tr className="border-b bg-gray-50 last:border-0">
-                        <td colSpan={12} className="p-4">
+                        <td colSpan={13} className="p-4">
                           <table className="w-full text-xs">
                             <thead>
                               <tr className="text-left text-muted-foreground">
@@ -230,6 +269,34 @@ export default function SalesInvoicesPage() {
                               ))}
                             </tbody>
                           </table>
+
+                          {s.returns.length > 0 && (
+                            <div className="mt-3 border-t pt-3">
+                              <p className="mb-1.5 text-xs font-semibold text-muted-foreground">Returns</p>
+                              <table className="w-full text-xs">
+                                <thead>
+                                  <tr className="text-left text-muted-foreground">
+                                    <th className="pb-2">Return #</th>
+                                    <th className="pb-2">Date</th>
+                                    <th className="pb-2">Items</th>
+                                    <th className="pb-2">Refund</th>
+                                    <th className="pb-2">Reason</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {s.returns.map((r) => (
+                                    <tr key={r.id}>
+                                      <td className="py-1.5">{r.returnNumber}</td>
+                                      <td className="py-1.5">{new Date(r.createdAt).toLocaleString()}</td>
+                                      <td className="py-1.5">{r.items.reduce((sum, i) => sum + i.quantity, 0)}</td>
+                                      <td className="py-1.5 text-red-600">-{formatCurrency(r.refundAmount)}</td>
+                                      <td className="py-1.5 text-muted-foreground">{r.reason || "—"}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     )}
@@ -240,6 +307,13 @@ export default function SalesInvoicesPage() {
           </table>
         </div>
       )}
+
+      <ReturnDialog
+        open={returnSaleId !== null}
+        onOpenChange={(open) => !open && setReturnSaleId(null)}
+        sale={returnSale}
+        onSubmit={handleReturnSubmit}
+      />
     </div>
   );
 }

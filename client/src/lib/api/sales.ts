@@ -1,5 +1,5 @@
 import { api } from "./client";
-import { Sale } from "@/types/sale";
+import { Sale, SaleReturn } from "@/types/sale";
 
 interface CreateSaleItemInput {
   productId: string;
@@ -14,8 +14,14 @@ export interface CreateSaleInput {
   items: CreateSaleItemInput[];
 }
 
+export interface CreateReturnInput {
+  reason?: string;
+  items: { saleItemId: string; quantity: number; restock: boolean }[];
+}
+
 export const salesApi = {
   list: () => api.get<Sale[]>("/sales"),
   get: (id: string) => api.get<Sale>(`/sales/${id}`),
   create: (data: CreateSaleInput) => api.post<Sale>("/sales", data),
+  createReturn: (saleId: string, data: CreateReturnInput) => api.post<SaleReturn>(`/sales/${saleId}/returns`, data),
 };

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Sale } from "@/types/sale";
-import { salesApi, CreateSaleInput } from "@/lib/api/sales";
+import { salesApi, CreateSaleInput, CreateReturnInput } from "@/lib/api/sales";
 
 export function useSales() {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -29,5 +29,11 @@ export function useSales() {
     return created;
   }
 
-  return { sales, loading, error, createSale, refetch: fetchSales };
+  async function createReturn(saleId: string, data: CreateReturnInput) {
+    const result = await salesApi.createReturn(saleId, data);
+    await fetchSales();
+    return result;
+  }
+
+  return { sales, loading, error, createSale, createReturn, refetch: fetchSales };
 }

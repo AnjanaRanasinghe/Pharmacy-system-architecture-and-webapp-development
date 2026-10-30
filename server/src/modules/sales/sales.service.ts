@@ -15,6 +15,12 @@ interface CreateSaleInput {
   items: SaleItemInput[];
 }
 
+interface CreateReturnInput {
+  userId: string;
+  reason?: string;
+  items: { saleItemId: string; quantity: number; restock: boolean }[];
+}
+
 function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
@@ -23,6 +29,10 @@ const saleInclude = {
   user: { select: { id: true, name: true, email: true, role: true } },
   customer: true,
   items: { include: { batch: { include: { product: true } } } },
+  returns: {
+    include: { items: true, user: { select: { id: true, name: true, email: true } } },
+    orderBy: { createdAt: "desc" },
+  },
 } as const;
 
 export const salesService = {
@@ -142,6 +152,67 @@ export const salesService = {
       }
 
       return sale;
+    });
+  },
+
+  async createReturn(saleId: string, input: CreateReturnInput) {
+    if (input.items.length === 0) throw new AppError("Select at least one item to return.");
+
+    return prisma.$transaction(async (tx) => {
+      const sale = await tx.sale.findUnique({
+        where: { id: saleId },
+        include: { items: { include: { returnItems: true } } },
+      });
+      if (!sale) throw new AppError("Sale not found", 404);
+
+      let refundAmount = 0;
+      const returnItemsData: { saleItemId: string; quantity: number; restocked: boolean }[] = [];
+      const restockOps: { batchId: string; quantity: number }[] = [];
+
+      for (const requested of input.items) {
+        const saleItem = sale.items.find((i) => i.id === requested.saleItemId);
+        if (!saleItem) throw new AppError(`Sale item ${requested.saleItemId} does not belong to this invoice.`);
+        if (requested.quantity <= 0) throw new AppError("Return quantity must be greater than 0.");
+
+        const alreadyReturned = saleItem.returnItems.reduce((sum, ri) => sum + ri.quantity, 0);
+        const returnable = saleItem.quantity - alreadyReturned;
+        if (requested.quantity > returnable) {
+          throw new AppError(
+            `Only ${returnable} unit(s) of this item can still be returned (already returned ${alreadyReturned} of ${saleItem.quantity}).`
+          );
+        }
+
+        const netUnitPrice =
+          Number(saleItem.price) * (1 - Number(saleItem.discountPercent) / 100) * (1 - Number(sale.discountPercent) / 100);
+        refundAmount += netUnitPrice * requested.quantity;
+
+        returnItemsData.push({ saleItemId: saleItem.id, quantity: requested.quantity, restocked: requested.restock });
+        if (requested.restock) restockOps.push({ batchId: saleItem.batchId, quantity: requested.quantity });
+      }
+
+      const year = new Date().getFullYear();
+      const countThisYear = await tx.saleReturn.count({
+        where: { createdAt: { gte: new Date(`${year}-01-01`), lt: new Date(`${year + 1}-01-01`) } },
+      });
+      const returnNumber = `RET-${year}-${String(countThisYear + 1).padStart(4, "0")}`;
+
+      const saleReturn = await tx.saleReturn.create({
+        data: {
+          returnNumber,
+          saleId,
+          userId: input.userId,
+          reason: input.reason?.trim() || undefined,
+          refundAmount: round2(refundAmount),
+          items: { create: returnItemsData },
+        },
+        include: { items: true, user: { select: { id: true, name: true, email: true } } },
+      });
+
+      for (const op of restockOps) {
+        await tx.stockBatch.update({ where: { id: op.batchId }, data: { quantityOnHand: { increment: op.quantity } } });
+      }
+
+      return saleReturn;
     });
   },
 };

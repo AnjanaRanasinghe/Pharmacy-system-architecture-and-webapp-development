@@ -26,6 +26,8 @@ export interface SalesReport {
     totalProfit: number;
     marginPercent: number;
     totalTransactions: number;
+    totalRefunds: number;
+    refundCount: number;
   };
   daily: SalesReportDailyPoint[];
   byPayment: SalesReportPaymentBreakdown[];

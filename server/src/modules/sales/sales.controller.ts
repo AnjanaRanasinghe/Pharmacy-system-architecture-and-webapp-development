@@ -17,6 +17,17 @@ const createSaleSchema = z.object({
   items: z.array(saleItemSchema).min(1, "Add at least one item"),
 });
 
+const returnItemSchema = z.object({
+  saleItemId: z.string().uuid(),
+  quantity: z.number().int().positive("Quantity must be greater than 0"),
+  restock: z.boolean().default(false),
+});
+
+const createReturnSchema = z.object({
+  reason: z.string().max(500).optional(),
+  items: z.array(returnItemSchema).min(1, "Select at least one item to return"),
+});
+
 export const salesController = {
   async list(_req: AuthedRequest, res: Response) {
     res.json(serializeDecimals(await salesService.list()));
@@ -32,5 +43,13 @@ export const salesController = {
 
     const sale = await salesService.create({ ...parsed.data, userId: req.userId! });
     res.status(201).json(serializeDecimals(sale));
+  },
+
+  async createReturn(req: AuthedRequest, res: Response) {
+    const parsed = createReturnSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+    const saleReturn = await salesService.createReturn(String(req.params.id), { ...parsed.data, userId: req.userId! });
+    res.status(201).json(serializeDecimals(saleReturn));
   },
 };

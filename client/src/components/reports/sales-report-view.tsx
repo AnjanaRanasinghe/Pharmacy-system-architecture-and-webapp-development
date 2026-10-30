@@ -39,13 +39,19 @@ export function SalesReportView({ report }: { report: SalesReport }) {
           />
         </div>
 
-        {report.byPayment.length > 0 && (
+        {(report.byPayment.length > 0 || report.summary.refundCount > 0) && (
           <div className="mt-4 flex flex-wrap gap-3 border-t pt-4">
             {report.byPayment.map((p) => (
               <div key={p.method} className="rounded-lg bg-blue-50/60 px-3 py-2 text-xs text-gray-700">
                 <span className="font-medium">{p.method}</span> — {p.count} sale{p.count === 1 ? "" : "s"} · {formatCurrency(p.amount)}
               </div>
             ))}
+            {report.summary.refundCount > 0 && (
+              <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+                <span className="font-medium">Refunds</span> — {report.summary.refundCount} return{report.summary.refundCount === 1 ? "" : "s"} ·{" "}
+                -{formatCurrency(report.summary.totalRefunds)}
+              </div>
+            )}
           </div>
         )}
       </div>

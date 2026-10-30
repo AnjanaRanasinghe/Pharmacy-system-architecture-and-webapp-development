@@ -107,16 +107,23 @@ async function getSalesVsPurchasesTrend() {
   const now = new Date();
   const months = Array.from({ length: 6 }, (_, i) => {
     const offset = 5 - i;
+    // soldAt is a real DateTime, so local-midnight month boundaries are correct for it.
     const start = new Date(now.getFullYear(), now.getMonth() - offset, 1);
     const end = new Date(now.getFullYear(), now.getMonth() - offset + 1, 1);
-    return { label: start.toLocaleDateString("en-US", { month: "short" }), start, end };
+    // orderDate is a @db.Date column with no time-of-day — Postgres compares it by
+    // truncating the bound parameter to its UTC calendar date, so a local-midnight
+    // boundary (which is the *previous* UTC day in any positive-offset timezone)
+    // would silently drop the first day of the month. UTC month boundaries avoid that.
+    const startUtc = new Date(Date.UTC(now.getFullYear(), now.getMonth() - offset, 1));
+    const endUtc = new Date(Date.UTC(now.getFullYear(), now.getMonth() - offset + 1, 1));
+    return { label: start.toLocaleDateString("en-US", { month: "short" }), start, end, startUtc, endUtc };
   });
 
   const results = await Promise.all(
     months.map(async (m) => {
       const [salesAgg, purchasesAgg] = await Promise.all([
         prisma.sale.aggregate({ _sum: { totalAmount: true }, where: { soldAt: { gte: m.start, lt: m.end } } }),
-        prisma.purchase.aggregate({ _sum: { totalAmount: true }, where: { orderDate: { gte: m.start, lt: m.end } } }),
+        prisma.purchase.aggregate({ _sum: { totalAmount: true }, where: { orderDate: { gte: m.startUtc, lt: m.endUtc } } }),
       ]);
       return {
         month: m.label,

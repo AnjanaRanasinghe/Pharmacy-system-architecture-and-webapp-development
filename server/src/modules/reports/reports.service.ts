@@ -34,7 +34,8 @@ function parseLocalDate(s: string) {
 }
 
 /** Resolves a from/to query pair to a concrete [start, endExclusive) window, defaulting to a
- * trailing window ending today ("past") or a leading window starting today ("future"). */
+ * trailing window ending today ("past") or a leading window starting today ("future").
+ * For querying real DateTime columns (e.g. Sale.soldAt) where local calendar days matter. */
 function resolveRange(from: string | undefined, to: string | undefined, defaultDays: number, direction: "past" | "future" = "past") {
   const today = startOfDay(new Date());
   let start: Date;
@@ -54,6 +55,44 @@ function resolveRange(from: string | undefined, to: string | undefined, defaultD
   return { start, end, fromLabel: toDateInputValue(start), toLabel: toDateInputValue(addDays(end, -1)) };
 }
 
+function parseUtcDate(s: string) {
+  return new Date(`${s}T00:00:00.000Z`);
+}
+
+function addUtcDays(d: Date, n: number) {
+  const x = new Date(d);
+  x.setUTCDate(x.getUTCDate() + n);
+  return x;
+}
+
+function toDateInputValueUtc(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+/** Same as resolveRange, but for Prisma `@db.Date` columns (Purchase.orderDate,
+ * StockBatch.expiryDate). Those columns have no time-of-day, and Postgres compares
+ * them by truncating the query's bound timestamp to its UTC calendar date — so in a
+ * timezone ahead of UTC, a local-midnight boundary lands on the *previous* UTC day
+ * and silently excludes the last day of the range. UTC-midnight boundaries avoid that. */
+function resolveDateOnlyRange(from: string | undefined, to: string | undefined, defaultDays: number, direction: "past" | "future" = "past") {
+  const todayUtc = parseUtcDate(toDateInputValue(new Date()));
+  let start: Date;
+  let end: Date;
+
+  if (from && to) {
+    start = parseUtcDate(from);
+    end = addUtcDays(parseUtcDate(to), 1);
+  } else if (direction === "past") {
+    end = addUtcDays(todayUtc, 1);
+    start = addUtcDays(todayUtc, -(defaultDays - 1));
+  } else {
+    start = todayUtc;
+    end = addUtcDays(todayUtc, defaultDays + 1);
+  }
+
+  return { start, end, fromLabel: toDateInputValueUtc(start), toLabel: toDateInputValueUtc(addUtcDays(end, -1)) };
+}
+
 async function getSalesReport(from?: string, to?: string) {
   const { start, end, fromLabel, toLabel } = resolveRange(from, to, DEFAULT_RANGE_DAYS, "past");
 
@@ -61,6 +100,12 @@ async function getSalesReport(from?: string, to?: string) {
     where: { soldAt: { gte: start, lt: end } },
     include: { items: { include: { batch: { include: { product: true } } } } },
     orderBy: { soldAt: "asc" },
+  });
+
+  const returns = await prisma.saleReturn.findMany({
+    where: { createdAt: { gte: start, lt: end } },
+    include: { items: { include: { saleItem: { include: { batch: true } } } } },
+    orderBy: { createdAt: "asc" },
   });
 
   const dailyMap = new Map<string, { transactions: number; revenue: number; profit: number }>();
@@ -99,6 +144,28 @@ async function getSalesReport(from?: string, to?: string) {
     }
   }
 
+  let totalRefunds = 0;
+
+  for (const ret of returns) {
+    const dateKey = toDateInputValue(ret.createdAt);
+    const refund = Number(ret.refundAmount);
+    // Only restocked units give back their cost — a written-off return is a real loss,
+    // not just a revenue reversal, so its cost stays counted against profit.
+    const restockedCost = ret.items
+      .filter((ri) => ri.restocked)
+      .reduce((sum, ri) => sum + Number(ri.saleItem.batch.purchasePrice) * ri.quantity, 0);
+    const profitImpact = restockedCost - refund;
+
+    totalRevenue -= refund;
+    totalProfit += profitImpact;
+    totalRefunds += refund;
+
+    const dayEntry = dailyMap.get(dateKey) ?? { transactions: 0, revenue: 0, profit: 0 };
+    dayEntry.revenue -= refund;
+    dayEntry.profit += profitImpact;
+    dailyMap.set(dateKey, dayEntry);
+  }
+
   const daily = Array.from(dailyMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, v]) => ({ date, transactions: v.transactions, revenue: round2(v.revenue), profit: round2(v.profit) }));
@@ -118,6 +185,8 @@ async function getSalesReport(from?: string, to?: string) {
       totalProfit: round2(totalProfit),
       marginPercent: totalRevenue > 0 ? round2((totalProfit / totalRevenue) * 100) : 0,
       totalTransactions: sales.length,
+      totalRefunds: round2(totalRefunds),
+      refundCount: returns.length,
     },
     daily,
     byPayment,
@@ -126,7 +195,7 @@ async function getSalesReport(from?: string, to?: string) {
 }
 
 async function getPurchaseReport(from?: string, to?: string) {
-  const { start, end, fromLabel, toLabel } = resolveRange(from, to, DEFAULT_RANGE_DAYS, "past");
+  const { start, end, fromLabel, toLabel } = resolveDateOnlyRange(from, to, DEFAULT_RANGE_DAYS, "past");
 
   const purchases = await prisma.purchase.findMany({
     where: { orderDate: { gte: start, lt: end } },
@@ -217,7 +286,7 @@ async function getStockReport() {
 }
 
 async function getExpiryReport(from?: string, to?: string) {
-  const { start, end, fromLabel, toLabel } = resolveRange(from, to, DEFAULT_EXPIRY_LOOKAHEAD_DAYS, "future");
+  const { start, end, fromLabel, toLabel } = resolveDateOnlyRange(from, to, DEFAULT_EXPIRY_LOOKAHEAD_DAYS, "future");
   const today = startOfDay(new Date());
   const criticalCutoff = addDays(today, EXPIRY_CRITICAL_DAYS);
 

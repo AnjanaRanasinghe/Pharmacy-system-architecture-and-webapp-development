@@ -9,3 +9,4 @@ salesRouter.use(requireAuth);
 salesRouter.get("/", asyncHandler(salesController.list));
 salesRouter.get("/:id", asyncHandler(salesController.get));
 salesRouter.post("/", asyncHandler(salesController.create));
+salesRouter.post("/:id/returns", asyncHandler(salesController.createReturn));

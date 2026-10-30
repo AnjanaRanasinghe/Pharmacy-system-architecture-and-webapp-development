@@ -10,6 +10,8 @@ import { suppliersRouter } from "./modules/suppliers/suppliers.routes";
 import { salesRouter } from "./modules/sales/sales.routes";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes";
 import { reportsRouter } from "./modules/reports/reports.routes";
+import { settingsRouter } from "./modules/settings/settings.routes";
+import { notificationsRouter } from "./modules/notifications/notifications.routes";
 import { AppError } from "./common/errors/app-error";
 
 export const app = express();
@@ -29,6 +31,8 @@ app.use("/api/suppliers", suppliersRouter);
 app.use("/api/sales", salesRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/reports", reportsRouter);
+app.use("/api/settings", settingsRouter);
+app.use("/api/notifications", notificationsRouter);
 
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (err instanceof AppError) {

@@ -9,6 +9,7 @@ export interface ReportColumn {
 
 interface ExportPdfOptions {
   filename: string;
+  pharmacyName?: string;
   title: string;
   subtitle?: string;
   columns: ReportColumn[];
@@ -18,12 +19,12 @@ interface ExportPdfOptions {
 
 const BRAND_BLUE: [number, number, number] = [37, 99, 235];
 
-export function exportReportPdf({ filename, title, subtitle, columns, rows, summaryLines }: ExportPdfOptions) {
+export function exportReportPdf({ filename, pharmacyName, title, subtitle, columns, rows, summaryLines }: ExportPdfOptions) {
   const doc = new jsPDF();
 
   doc.setFontSize(16);
   doc.setTextColor(17, 24, 39);
-  doc.text("HPK Pharmacy & Laboratory", 14, 16);
+  doc.text(pharmacyName || "Pharmacy", 14, 16);
 
   doc.setFontSize(13);
   doc.text(title, 14, 25);

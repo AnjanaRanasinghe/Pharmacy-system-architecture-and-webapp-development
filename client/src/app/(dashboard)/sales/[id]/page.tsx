@@ -9,14 +9,13 @@ import { Sale } from "@/types/sale";
 import { formatCurrency } from "@/lib/utils/currency";
 import { groupSaleItemsForDisplay } from "@/lib/utils/sale-items";
 import { displayNameFromEmail } from "@/lib/utils/user";
-
-const PHARMACY_ADDRESS = "No: 119/A/C1, Yagodamulla, Kotugoda";
-const PHARMACY_WHATSAPP = "0786700023";
+import { useSettings } from "@/contexts/settings-context";
 
 export default function SaleInvoicePage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { settings } = useSettings();
   const [sale, setSale] = useState<Sale | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,9 +54,9 @@ export default function SaleInvoicePage() {
 
       <div className="mx-auto w-[302px] rounded-lg border bg-white p-4 font-mono text-xs shadow-sm print:w-[80mm] print:rounded-none print:border-0 print:p-0 print:shadow-none">
         <div className="text-center">
-          <p className="text-sm font-bold">HPK PHARMACY &amp; LABORATORY</p>
-          <p>{PHARMACY_ADDRESS}</p>
-          <p>WhatsApp {PHARMACY_WHATSAPP}</p>
+          <p className="text-sm font-bold">{(settings?.name || "PHARMACY").toUpperCase()}</p>
+          {settings?.address && <p>{settings.address}</p>}
+          {settings?.whatsapp && <p>WhatsApp {settings.whatsapp}</p>}
         </div>
 
         <p className="mt-2 text-center font-bold">INVOICE</p>
@@ -72,7 +71,6 @@ export default function SaleInvoicePage() {
           <span>Time : {soldAt.toLocaleTimeString()}</span>
           <span>User : {cashierName}</span>
         </div>
-        <p>Customer :</p>
 
         <div className="my-2 border-t border-dashed border-gray-400" />
 

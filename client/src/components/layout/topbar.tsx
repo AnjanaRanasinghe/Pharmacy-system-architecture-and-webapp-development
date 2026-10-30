@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { Bell, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
+import { useNotifications } from "@/contexts/notifications-context";
 import { displayNameFromEmail } from "@/lib/utils/user";
 
 export function Topbar() {
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -23,14 +25,22 @@ export function Topbar() {
   return (
     <header className="flex items-center justify-between border-b bg-white px-8 py-4 print:hidden">
       <div>
-        <p className="text-sm font-medium">Welcome back, {user?.email}</p>
+        <p className="text-sm font-medium">Welcome back, {displayName}</p>
         <p className="text-xs text-muted-foreground">{today}</p>
       </div>
 
       <div className="flex items-center gap-5">
-        <button className="relative" aria-label="Notifications">
+        <button
+          className="relative"
+          aria-label="Notifications"
+          onClick={() => router.push("/notifications")}
+        >
           <Bell className="h-5 w-5 text-gray-500" />
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[10px] text-white">3</span>
+          {unreadCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] text-white">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
         </button>
 
         <div className="relative">

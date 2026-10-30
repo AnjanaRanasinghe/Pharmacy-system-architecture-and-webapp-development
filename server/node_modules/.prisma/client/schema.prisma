@@ -32,6 +32,22 @@ enum NotificationType {
   OUT_OF_STOCK
 }
 
+// A single, always-present row (fixed id) holding the pharmacy's own identity —
+// name/address/contact — so it's edited once in Settings and read everywhere else
+// (invoices, report exports, sidebar) instead of being hardcoded in each place.
+model PharmacySettings {
+  id            String   @id @default("singleton")
+  name          String
+  address       String?
+  phone         String?
+  whatsapp      String?
+  email         String?
+  licenseNumber String?  @map("license_number")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("pharmacy_settings")
+}
+
 model User {
   id           String   @id @default(uuid())
   name         String?

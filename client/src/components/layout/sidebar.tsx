@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation";
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/contexts/settings-context";
 import {
   LayoutDashboard, Pill, Tags, Truck, ShoppingCart,
-  DollarSign, Users, FileText, Bell, Settings, ChevronDown,
+  DollarSign, FileText, Bell, Settings, ChevronDown,
 } from "lucide-react";
 
 type NavLeaf = { label: string; href: string };
@@ -36,7 +37,6 @@ const navItems: NavItem[] = [
   },
   { label: "Categories", href: "/categories", icon: Tags },
   { label: "Suppliers", href: "/suppliers", icon: Truck },
-  { label: "Customers", href: "/customers", icon: Users },
   { label: "Reports", href: "/reports", icon: FileText },
   { label: "Notifications", href: "/notifications", icon: Bell },
   { label: "Settings", href: "/settings", icon: Settings },
@@ -52,6 +52,7 @@ const linkClasses = (active: boolean) =>
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { settings } = useSettings();
   const navRef = useRef<HTMLElement>(null);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
@@ -87,7 +88,7 @@ export function Sidebar() {
           <Pill className="h-5 w-5" />
         </div>
         <div>
-          <p className="font-semibold leading-none">HPK Pharmacy & Laboratory</p>
+          <p className="font-semibold leading-none">{settings?.name || "Pharmacy"}</p>
           <p className="text-xs text-muted-foreground">Inventory system</p>
         </div>
       </div>

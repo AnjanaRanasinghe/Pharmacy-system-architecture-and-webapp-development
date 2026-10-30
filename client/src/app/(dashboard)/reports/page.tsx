@@ -17,6 +17,7 @@ import { ExpiryReport, PurchaseReport, SalesReport, StockReport } from "@/types/
 import { formatCurrency } from "@/lib/utils/currency";
 import { toDateInputValue } from "@/lib/utils/date";
 import { exportReportExcel, exportReportPdf, ReportColumn } from "@/lib/utils/report-export";
+import { useSettings } from "@/contexts/settings-context";
 
 type ReportType = "SALES" | "PURCHASE" | "STOCK" | "EXPIRY";
 type DateRange = { from: string; to: string };
@@ -29,6 +30,7 @@ const REPORT_LABELS: Record<ReportType, string> = {
 };
 
 export default function ReportsPage() {
+  const { settings } = useSettings();
   const [reportType, setReportType] = useState<ReportType>("SALES");
   const [ranges, setRanges] = useState<Partial<Record<ReportType, DateRange>>>({});
   const [salesReport, setSalesReport] = useState<SalesReport | null>(null);
@@ -213,6 +215,7 @@ export default function ReportsPage() {
     if (!exportPayload) return;
     exportReportPdf({
       filename: `${reportType.toLowerCase()}-report-${toDateInputValue(new Date())}.pdf`,
+      pharmacyName: settings?.name,
       title: exportPayload.title,
       subtitle: exportPayload.subtitle,
       columns: exportPayload.columns,

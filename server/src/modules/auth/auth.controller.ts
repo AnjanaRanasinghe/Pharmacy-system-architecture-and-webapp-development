@@ -12,7 +12,11 @@ const credentialsSchema = z.object({
 export const COOKIE_OPTIONS = {
   httpOnly: true,
   sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production",
+  // Tied to an explicit flag, not NODE_ENV — this app runs production-mode on a
+  // plain-HTTP local PC with no TLS, and a `Secure` cookie is silently dropped by
+  // the browser over HTTP, which would break login. Opt in with COOKIE_SECURE=true
+  // once the app is actually served over HTTPS.
+  secure: process.env.COOKIE_SECURE === "true",
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 

@@ -113,15 +113,16 @@ export const salesService = {
         throw new AppError(`Cash tendered (${input.cashTendered}) is less than the total (${totalAmount}).`);
       }
 
-      const year = new Date().getFullYear();
-      const countThisYear = await tx.sale.count({
-        where: { soldAt: { gte: new Date(`${year}-01-01`), lt: new Date(`${year + 1}-01-01`) } },
-      });
-      const invoiceNumber = `INV-${year}-${String(countThisYear + 1).padStart(4, "0")}`;
+      // The invoice number is just the sale's own running sequenceNumber (1, 2, 3...),
+      // so the shop can tell at a glance how many invoices it has ever issued. That
+      // number only exists once the row is created, but invoiceNumber is a required,
+      // unique column — so create with a collision-proof placeholder, then stamp the
+      // real number on right after, inside the same transaction.
+      const placeholderInvoiceNumber = `pending-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-      const sale = await tx.sale.create({
+      const created = await tx.sale.create({
         data: {
-          invoiceNumber,
+          invoiceNumber: placeholderInvoiceNumber,
           userId: input.userId,
           paymentMethod: input.paymentMethod,
           subtotalAmount: round2(subtotalAmount),
@@ -139,6 +140,11 @@ export const salesService = {
             ),
           },
         },
+      });
+
+      const sale = await tx.sale.update({
+        where: { id: created.id },
+        data: { invoiceNumber: String(created.sequenceNumber) },
         include: saleInclude,
       });
 

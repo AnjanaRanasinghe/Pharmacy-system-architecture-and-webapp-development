@@ -26,7 +26,8 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "reset:factory": "ts-node --transpile-only scripts/factory-reset.ts"
   },
   "prisma": {
     "schema": "src/db/prisma/schema.prisma"

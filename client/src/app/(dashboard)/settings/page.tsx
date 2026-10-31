@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useSettings } from "@/contexts/settings-context";
 import { useFieldChainNav } from "@/hooks/use-field-chain-nav";
+import { BackupRestoreSection } from "@/components/settings/backup-restore-section";
 
 export default function SettingsPage() {
   const { settings, loading, error, updateSettings, refetch } = useSettings();
@@ -176,6 +177,8 @@ export default function SettingsPage() {
           </Button>
         </div>
       )}
+
+      <BackupRestoreSection />
     </div>
   );
 }

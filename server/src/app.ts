@@ -12,6 +12,7 @@ import { dashboardRouter } from "./modules/dashboard/dashboard.routes";
 import { reportsRouter } from "./modules/reports/reports.routes";
 import { settingsRouter } from "./modules/settings/settings.routes";
 import { notificationsRouter } from "./modules/notifications/notifications.routes";
+import { backupRouter } from "./modules/backup/backup.routes";
 import { AppError } from "./common/errors/app-error";
 
 export const app = express();
@@ -33,10 +34,14 @@ app.use("/api/dashboard", dashboardRouter);
 app.use("/api/reports", reportsRouter);
 app.use("/api/settings", settingsRouter);
 app.use("/api/notifications", notificationsRouter);
+app.use("/api/backup", backupRouter);
 
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({ error: err.message });
+  }
+  if (err?.name === "MulterError") {
+    return res.status(400).json({ error: `Upload failed: ${err.message}` });
   }
   console.error(err);
   res.status(500).json({ error: "Internal server error" });

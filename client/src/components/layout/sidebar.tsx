@@ -80,6 +80,28 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
+  // The browser/app-window title comes from <title> in the root layout, which is
+  // static — there's no server-rendered page that knows the pharmacy's name. Once
+  // Settings has loaded here, swap it to the real name so the Chrome app-mode
+  // window (and the browser tab) show the shop's own name instead of "PharmaCare".
+  // On every client-side navigation, Next re-renders metadata for the new route by
+  // swapping in a BRAND NEW <title> element (confirmed: it's a different DOM node
+  // after each navigation, not just updated text) — so an observer watching that one
+  // node stops seeing anything the moment Next replaces it. Watching <head> itself
+  // (which never gets replaced) catches the swap every time, no matter how many
+  // pages you click through without Settings itself changing.
+  useEffect(() => {
+    const desiredTitle = settings?.name;
+    if (!desiredTitle) return;
+    document.title = desiredTitle;
+
+    const observer = new MutationObserver(() => {
+      if (document.title !== desiredTitle) document.title = desiredTitle;
+    });
+    observer.observe(document.head, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
+  }, [settings]);
+
   // Esc closes the mobile drawer, same as any other overlay in the app.
   useEffect(() => {
     if (!open) return;

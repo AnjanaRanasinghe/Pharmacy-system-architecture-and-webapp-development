@@ -15,22 +15,35 @@ shop is open — see "Why no network is needed" at the bottom.
 Everything below this point can be done with the PC offline, **except** the two
 steps marked 🌐 (they need internet once).
 
-## 1. Get the code onto the PC
+## 1. Get the code onto the PC (GitHub ZIP download)
 
-🌐 Either:
-```bash
-git clone https://github.com/AnjanaRanasinghe/Pharmacy-system-architecture-and-webapp-development.git
-```
-or copy the project folder from a USB drive if that PC has no internet at all.
+All commits on `main` are already pushed to GitHub, so the simplest path is to
+download a ZIP directly on the shop PC's browser (it needs internet anyway for
+Node/PostgreSQL) — no USB drive needed:
 
-**Important:** `server/node_modules` is accidentally committed in this repo (a
-pre-existing `.gitignore` gap, not something to fix tonight). Native modules
-like `bcrypt` are compiled for a specific Node version/CPU — the copy in git may
-not match the shop PC. Delete it and reinstall fresh:
+- Open the repo page → green **Code** button → **Download ZIP**, or go
+  straight to:
+  `https://github.com/AnjanaRanasinghe/Pharmacy-system-architecture-and-webapp-development/archive/refs/heads/main.zip`
+
+Extract it somewhere simple, e.g. `C:\PharmaCare`.
+
+**Important — delete `server/node_modules` after extracting.** It's
+accidentally committed in this repo (a pre-existing `.gitignore` gap), so it's
+inside the ZIP too. Native modules like `bcrypt` are compiled for a specific
+Node version/CPU — the copy in git was built on the dev PC and may not run on
+the shop PC. Delete it and reinstall fresh in step 4:
 ```bash
 cd server
 rm -rf node_modules
 ```
+
+`.env` files for both `client` and `server` are correctly excluded by
+`.gitignore`, so they won't be in the ZIP — create fresh ones in step 3 below
+regardless of how you got the code onto this PC.
+
+(No internet on the shop PC at all? Use a USB drive instead: on the dev PC,
+`robocopy "D:\Pharmacy-system-architecture-and-webapp-development" "D:\PharmaCare-ToCopy" /E /XD node_modules .next dist backups .git .claude /XF .env`,
+then zip and copy that folder over.)
 
 ## 2. Create the database
 
@@ -92,16 +105,20 @@ no factory reset needed on this PC.
 
 ## 6. Make it start automatically and feel like a desktop app
 
-Create `start-pharmacy-app.bat` in the project root:
+`start-pharmacy-app.bat` is already in the project root (it came along in the
+zip). Open it in Notepad and update the two `cd /d` paths to wherever you
+extracted the project on this PC (e.g. `C:\PharmaCare\server` and
+`C:\PharmaCare\client`):
 ```bat
 @echo off
-start "PharmaCare API" /min cmd /c "cd /d D:\PathToProject\server && node dist\server.js"
+start "PharmaCare API" /min cmd /c "set PORT=5000&& cd /d C:\PharmaCare\server && node dist\server.js"
 timeout /t 3 /nobreak >nul
-start "PharmaCare Web" /min cmd /c "cd /d D:\PathToProject\client && npm run start"
+start "PharmaCare Web" /min cmd /c "set PORT=3000&& cd /d C:\PharmaCare\client && npm run start"
 timeout /t 3 /nobreak >nul
-start chrome --app=http://localhost:3000
+start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --app=http://localhost:3000
 ```
-(Adjust the path and swap `chrome` for `msedge` if that's what's installed.)
+(Swap the Chrome path for Edge's if that's what's installed — usually
+`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`.)
 
 Put a shortcut to this `.bat` file in the Startup folder so both servers come
 up automatically when the PC turns on:

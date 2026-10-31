@@ -29,3 +29,4 @@ backupRouter.get("/:filename/download", asyncHandler(backupController.download))
 backupRouter.delete("/:filename", asyncHandler(backupController.remove));
 backupRouter.post("/restore/upload", upload.single("file"), asyncHandler(backupController.restoreUpload));
 backupRouter.post("/restore/:filename", asyncHandler(backupController.restoreExisting));
+backupRouter.post("/factory-reset", asyncHandler(backupController.factoryReset));

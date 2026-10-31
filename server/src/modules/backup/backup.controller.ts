@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { AuthedRequest } from "../../common/middleware/auth.middleware";
 import { AppError } from "../../common/errors/app-error";
+import { COOKIE_OPTIONS } from "../auth/auth.controller";
 import { backupService } from "./backup.service";
 
 export const backupController = {
@@ -33,5 +34,13 @@ export const backupController = {
   async restoreExisting(req: AuthedRequest, res: Response) {
     const result = await backupService.restoreFromExisting(String(req.params.filename));
     res.json(result);
+  },
+
+  async factoryReset(req: AuthedRequest, res: Response) {
+    const { password } = req.body as { password?: string };
+    if (!password) throw new AppError("Password is required.");
+    await backupService.factoryResetWithPassword(req.userId as string, password);
+    res.clearCookie("token", COOKIE_OPTIONS);
+    res.status(204).send();
   },
 };

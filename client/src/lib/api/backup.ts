@@ -24,6 +24,8 @@ export const backupApi = {
   restoreExisting: (filename: string) =>
     api.post<RestoreResult>(`/backup/restore/${encodeURIComponent(filename)}`, {}),
 
+  factoryReset: (password: string) => api.post<void>("/backup/factory-reset", { password }),
+
   // Downloads a backup file straight to the browser's downloads folder.
   async download(filename: string): Promise<void> {
     const res = await fetch(`${API_URL}/backup/${encodeURIComponent(filename)}/download`, {

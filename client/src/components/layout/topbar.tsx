@@ -2,13 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, LogOut } from "lucide-react";
+import { Bell, LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { useNotifications } from "@/contexts/notifications-context";
 import { displayNameFromEmail } from "@/lib/utils/user";
 
-export function Topbar() {
+interface TopbarProps {
+  sidebarOpen: boolean;
+  onMenuClick: () => void;
+}
+
+export function Topbar({ sidebarOpen, onMenuClick }: TopbarProps) {
   const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
   const router = useRouter();
@@ -23,10 +28,19 @@ export function Topbar() {
   }
 
   return (
-    <header className="flex items-center justify-between border-b bg-white px-8 py-4 print:hidden">
-      <div>
-        <p className="text-sm font-medium">Welcome back, {displayName}</p>
-        <p className="text-xs text-muted-foreground">{today}</p>
+    <header className="flex items-center justify-between border-b bg-white px-4 py-4 sm:px-8 print:hidden">
+      <div className="flex items-center gap-3">
+        <button
+          aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+          onClick={onMenuClick}
+          className="-ml-1 rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+        >
+          {sidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
+        </button>
+        <div>
+          <p className="text-sm font-medium">Welcome back, {displayName}</p>
+          <p className="text-xs text-muted-foreground">{today}</p>
+        </div>
       </div>
 
       <div className="flex items-center gap-5">

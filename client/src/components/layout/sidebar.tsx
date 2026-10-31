@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSettings } from "@/contexts/settings-context";
 import {
   LayoutDashboard, Pill, Tags, Truck, ShoppingCart,
-  DollarSign, FileText, Bell, Settings, ChevronDown,
+  DollarSign, FileText, Bell, Settings, ChevronDown, X,
 } from "lucide-react";
 
 type NavLeaf = { label: string; href: string };
@@ -50,7 +50,12 @@ const linkClasses = (active: boolean) =>
       : "border-transparent text-gray-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600"
   );
 
-export function Sidebar() {
+interface SidebarProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { settings } = useSettings();
   const navRef = useRef<HTMLElement>(null);
@@ -63,6 +68,27 @@ export function Sidebar() {
     });
     return initial;
   });
+
+  // Navigating to a page closes the drawer, but only below `lg` — there, the sidebar
+  // is a full-screen overlay that should get out of the way once you've picked a
+  // page. At `lg` and up it's a collapsible column the user toggles on purpose, so
+  // following a link shouldn't fight that choice by collapsing it back.
+  useEffect(() => {
+    if (typeof window !== "undefined" && !window.matchMedia("(min-width: 1024px)").matches) {
+      onClose();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  // Esc closes the mobile drawer, same as any other overlay in the app.
+  useEffect(() => {
+    if (!open) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
 
   // Arrow keys move focus through whichever links/buttons are currently visible
   // (collapsed groups' children are unmounted, so they're naturally skipped).
@@ -82,18 +108,43 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r bg-white print:hidden">
-      <div className="flex items-center gap-2 border-b px-6 py-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white">
-          <Pill className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="font-semibold leading-none">{settings?.name || "Pharmacy"}</p>
-          <p className="text-xs text-muted-foreground">Inventory system</p>
-        </div>
-      </div>
+    <>
+      {/* Dims the page and closes the drawer on click — only below `lg`, where the
+          sidebar overlays content instead of sitting in the page's own flex row. */}
+      <div
+        aria-hidden="true"
+        onClick={onClose}
+        className={cn(
+          "fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 lg:hidden",
+          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+        )}
+      />
 
-      <nav ref={navRef} onKeyDown={handleNavKeyDown} className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex shrink-0 flex-col overflow-hidden border-r bg-white transition-all duration-300 ease-in-out print:hidden",
+          "lg:static lg:z-auto",
+          open ? "w-64 translate-x-0" : "w-64 -translate-x-full lg:w-0 lg:translate-x-0 lg:border-r-0"
+        )}
+      >
+        <div className="flex w-64 items-center gap-2 border-b px-6 py-5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white">
+            <Pill className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold leading-none">{settings?.name || "Pharmacy"}</p>
+            <p className="text-xs text-muted-foreground">Inventory system</p>
+          </div>
+          <button
+            aria-label="Close menu"
+            onClick={onClose}
+            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 lg:hidden"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+      <nav ref={navRef} onKeyDown={handleNavKeyDown} className="w-64 flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {navItems.map((item) => {
           if (!item.children) {
             const active = pathname === item.href;
@@ -156,6 +207,7 @@ export function Sidebar() {
           );
         })}
       </nav>
-    </aside>
+      </aside>
+    </>
   );
 }

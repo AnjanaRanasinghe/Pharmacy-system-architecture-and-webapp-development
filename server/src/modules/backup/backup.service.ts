@@ -1,8 +1,29 @@
 import fs from "fs";
 import path from "path";
 import zlib from "zlib";
+import bcrypt from "bcrypt";
 import { prisma } from "../../config/db";
 import { AppError } from "../../common/errors/app-error";
+
+// The actual SQL table names (see each model's @@map in schema.prisma), used for the
+// factory reset's TRUNCATE. Order doesn't matter here — every table is listed, so
+// there's nothing left for CASCADE to chase.
+export const FACTORY_RESET_SQL_TABLES = [
+  "notifications",
+  "sale_return_items",
+  "sale_returns",
+  "sale_items",
+  "sales",
+  "stock_batches",
+  "purchase_items",
+  "purchases",
+  "products",
+  "suppliers",
+  "categories",
+  "customers",
+  "users",
+  "pharmacy_settings",
+];
 
 // Every table in the database, in an order safe to INSERT (parents before children).
 // Restoring deletes in the exact reverse of this order (children before parents) so
@@ -214,5 +235,22 @@ export const backupService = {
 
   hasAnyBackup(): boolean {
     return listBackupFilesSortedDesc().length > 0;
+  },
+
+  // Wipes every table and resets all numbering (invoices, POs, returns) back to 1.
+  // Callers must verify the requester is who they say they are first — this has no
+  // confirmation of its own.
+  async factoryReset(): Promise<void> {
+    await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${FACTORY_RESET_SQL_TABLES.join(", ")} RESTART IDENTITY CASCADE;`);
+  },
+
+  async factoryResetWithPassword(userId: string, password: string): Promise<void> {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new AppError("User not found.", 404);
+
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) throw new AppError("Incorrect password.", 401);
+
+    await backupService.factoryReset();
   },
 };

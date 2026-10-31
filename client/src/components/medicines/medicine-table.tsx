@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { StatusBadge } from "./status-badge";
 import { ProductInventoryRow } from "@/types/product";
-import { formatCurrency } from "@/lib/utils/currency";
+import { formatNumber } from "@/lib/utils/currency";
+import { formatShortDate } from "@/lib/utils/date";
+import { cn } from "@/lib/utils";
 import { AlertTriangle, Barcode, Pencil, Trash2 } from "lucide-react";
 
 interface MedicineTableProps {
@@ -27,11 +29,11 @@ export function MedicineTable({ medicines, onEdit, onDelete }: MedicineTableProp
             <TableHead>Category</TableHead>
             <TableHead>Brand</TableHead>
             <TableHead>Batch</TableHead>
-            <TableHead>Purchase price</TableHead>
-            <TableHead>Selling price</TableHead>
-            <TableHead>Quantity</TableHead>
-            <TableHead>Low stock at</TableHead>
-            <TableHead>Nearest expiry</TableHead>
+            <TableHead className="text-right">Purchase price (Rs)</TableHead>
+            <TableHead className="text-right">Selling price (Rs)</TableHead>
+            <TableHead className="text-right">Quantity</TableHead>
+            <TableHead className="text-right">Low stock at</TableHead>
+            <TableHead className="text-right">Nearest expiry</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -52,14 +54,16 @@ export function MedicineTable({ medicines, onEdit, onDelete }: MedicineTableProp
                 <TableCell className="text-muted-foreground">
                   {m.batchCount === 0 ? "No stock" : m.batchCount === 1 ? m.primaryBatchNumber : `${m.batchCount} batches`}
                 </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {m.purchasePrice !== null ? formatCurrency(m.purchasePrice) : "—"}
+                <TableCell className="text-right tabular-nums text-muted-foreground">
+                  {m.purchasePrice !== null ? formatNumber(m.purchasePrice) : "—"}
                 </TableCell>
-                <TableCell>{formatCurrency(m.sellingPrice)}</TableCell>
-                <TableCell className={lowStock ? "font-medium text-orange-500" : ""}>{m.totalQuantity}</TableCell>
-                <TableCell className="text-muted-foreground">{m.reorderLevel}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {m.nearestExpiry ? new Date(m.nearestExpiry).toLocaleDateString() : "—"}
+                <TableCell className="text-right tabular-nums">{formatNumber(m.sellingPrice)}</TableCell>
+                <TableCell className={cn("text-right tabular-nums", lowStock && "font-medium text-orange-500")}>
+                  {m.totalQuantity}
+                </TableCell>
+                <TableCell className="text-right tabular-nums text-muted-foreground">{m.reorderLevel}</TableCell>
+                <TableCell className="text-right tabular-nums text-muted-foreground">
+                  {m.nearestExpiry ? formatShortDate(m.nearestExpiry) : "—"}
                 </TableCell>
                 <TableCell><StatusBadge lowStock={lowStock} /></TableCell>
                 <TableCell>

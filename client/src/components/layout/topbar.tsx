@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Bell, LogOut, PanelLeftClose, PanelLeftOpen, Settings } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { useNotifications } from "@/contexts/notifications-context";
 import { displayNameFromEmail } from "@/lib/utils/user";
@@ -17,7 +20,6 @@ export function Topbar({ sidebarOpen, onMenuClick }: TopbarProps) {
   const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const displayName = user?.name || (user?.email ? displayNameFromEmail(user.email) : "");
@@ -57,23 +59,29 @@ export function Topbar({ sidebarOpen, onMenuClick }: TopbarProps) {
           )}
         </button>
 
-        <div className="relative">
-          <button onClick={() => setMenuOpen((v) => !v)} className="flex items-center gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30">
             <Avatar className="h-8 w-8"><AvatarFallback>{displayName.charAt(0)}</AvatarFallback></Avatar>
             <div className="text-left text-sm">
               <p className="font-medium leading-none">{user?.email}</p>
               <p className="text-xs text-muted-foreground">{displayName}</p>
             </div>
-          </button>
-
-          {menuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-40 rounded-lg border bg-white py-1 shadow-lg">
-              <button onClick={handleLogout} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-500 hover:bg-gray-50">
-                <LogOut className="h-4 w-4" /> Log out
-              </button>
-            </div>
-          )}
-        </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56">
+            <DropdownMenuLabel>
+              <p className="font-medium text-foreground">{displayName}</p>
+              <p className="truncate">{user?.email}</p>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => router.push("/settings")}>
+              <Settings className="h-4 w-4" /> Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+              <LogOut className="h-4 w-4" /> Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

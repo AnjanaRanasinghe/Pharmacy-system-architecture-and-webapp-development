@@ -9,6 +9,11 @@ const credentialsSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
+const resetPasswordSchema = z.object({
+  email: z.string().email("Enter a valid email"),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+});
+
 export const COOKIE_OPTIONS = {
   httpOnly: true,
   sameSite: "lax" as const,
@@ -44,6 +49,18 @@ export const authController = {
       res.json(authService.sanitize(user));
     } catch (err) {
       res.status(401).json({ error: err instanceof Error ? err.message : "Login failed" });
+    }
+  },
+
+  async resetPassword(req: Request, res: Response) {
+    const parsed = resetPasswordSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+    try {
+      await authService.resetPassword(parsed.data.email, parsed.data.newPassword);
+      res.status(204).send();
+    } catch (err) {
+      res.status(404).json({ error: err instanceof Error ? err.message : "Could not reset password" });
     }
   },
 

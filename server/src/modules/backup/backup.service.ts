@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import zlib from "zlib";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { prisma } from "../../config/db";
 import { AppError } from "../../common/errors/app-error";
 

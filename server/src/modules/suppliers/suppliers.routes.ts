@@ -7,5 +7,6 @@ export const suppliersRouter = Router();
 suppliersRouter.use(requireAuth);
 suppliersRouter.get("/", asyncHandler(suppliersController.list));
 suppliersRouter.post("/", asyncHandler(suppliersController.create));
+suppliersRouter.post("/quick", asyncHandler(suppliersController.quickCreate));
 suppliersRouter.put("/:id", asyncHandler(suppliersController.update));
 suppliersRouter.delete("/:id", asyncHandler(suppliersController.remove));

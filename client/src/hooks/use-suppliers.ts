@@ -28,6 +28,17 @@ export function useSuppliers() {
   async function addSupplier(data: SupplierInput) {
     const created = await suppliersApi.create(data);
     setSuppliers((prev) => [...prev, { ...created, totalPurchases: 0 }]);
+    return created;
+  }
+
+  // Quick-add used from inline "+ Add as new supplier" pickers — only a name,
+  // the rest of the (otherwise required) fields are filled in later from the
+  // Suppliers page. Updates local state the same way addSupplier does, so it
+  // shows up immediately in this and any other open supplier picker.
+  async function quickAddSupplier(name: string) {
+    const created = await suppliersApi.quickCreate(name);
+    setSuppliers((prev) => [...prev, { ...created, totalPurchases: 0 }]);
+    return created;
   }
   async function updateSupplier(id: string, data: SupplierInput) {
     const updated = await suppliersApi.update(id, data);
@@ -38,5 +49,5 @@ export function useSuppliers() {
     setSuppliers((prev) => prev.filter((s) => s.id !== id));
   }
 
-  return { suppliers, loading, error, addSupplier, updateSupplier, deleteSupplier, refetch: fetchSuppliers };
+  return { suppliers, loading, error, addSupplier, quickAddSupplier, updateSupplier, deleteSupplier, refetch: fetchSuppliers };
 }

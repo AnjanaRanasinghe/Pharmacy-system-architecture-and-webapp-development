@@ -30,6 +30,15 @@ export function useCategories() {
   async function addCategory(data: CategoryInput) {
     const created = await categoriesApi.create(data);
     setCategories((prev) => [...prev, { ...created, medicineCount: 0 }]);
+    return created;
+  }
+
+  // Quick-add used from inline "+ Add as new category" pickers — only a name,
+  // no description. Still goes through the same create endpoint and local-state
+  // update as addCategory, so it shows up immediately everywhere categories are
+  // listed, including the next "add new product" dialog.
+  function quickAddCategory(name: string) {
+    return addCategory({ name, description: "" });
   }
 
   async function updateCategory(id: string, data: CategoryInput) {
@@ -42,5 +51,5 @@ export function useCategories() {
     setCategories((prev) => prev.filter((c) => c.id !== id));
   }
 
-  return { categories, loading, error, addCategory, updateCategory, deleteCategory, refetch: fetchCategories };
+  return { categories, loading, error, addCategory, quickAddCategory, updateCategory, deleteCategory, refetch: fetchCategories };
 }

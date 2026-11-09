@@ -11,6 +11,10 @@ const supplierSchema = z.object({
   paymentTerms: z.string().min(1, "Payment terms are required"),
 });
 
+const quickSupplierSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+});
+
 export const suppliersController = {
   async list(_req: Request, res: Response) {
     res.json(await suppliersService.getAll());
@@ -19,6 +23,11 @@ export const suppliersController = {
     const parsed = supplierSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     res.status(201).json(await suppliersService.create(parsed.data));
+  },
+  async quickCreate(req: Request, res: Response) {
+    const parsed = quickSupplierSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    res.status(201).json(await suppliersService.quickCreate(parsed.data.name));
   },
   async update(req: Request, res: Response) {
     const parsed = supplierSchema.safeParse(req.body);

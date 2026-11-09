@@ -45,7 +45,7 @@ const DRAFT_KEY = "draft:new-purchase-order";
 
 export default function NewPurchaseOrderPage() {
   const router = useRouter();
-  const { suppliers, loading: suppliersLoading, error: suppliersError, refetch: refetchSuppliers } = useSuppliers();
+  const { suppliers, loading: suppliersLoading, error: suppliersError, quickAddSupplier, refetch: refetchSuppliers } = useSuppliers();
   const { createPurchase } = usePurchases();
 
   const [supplierId, setSupplierId] = useState("");
@@ -285,7 +285,7 @@ export default function NewPurchaseOrderPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Label>Supplier</Label>
-            <SupplierCombobox suppliers={suppliers} value={supplierId} onChange={setSupplierId} />
+            <SupplierCombobox suppliers={suppliers} value={supplierId} onChange={setSupplierId} onCreate={quickAddSupplier} />
           </div>
           <div className="space-y-1.5">
             <Label>PO date</Label>

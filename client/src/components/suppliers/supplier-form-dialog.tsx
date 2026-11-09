@@ -18,7 +18,7 @@ interface SupplierFormDialogProps {
   onOpenChange: (open: boolean) => void;
   mode: "add" | "edit";
   initialData?: Supplier | null;
-  onSubmit: (values: SupplierFormValues) => Promise<void>;
+  onSubmit: (values: SupplierFormValues) => Promise<unknown>;
 }
 
 const emptyForm: SupplierFormValues = {

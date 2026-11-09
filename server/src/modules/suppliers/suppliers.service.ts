@@ -28,6 +28,17 @@ export const suppliersService = {
     }));
   },
   create: (data: SupplierInput) => prisma.supplier.create({ data }),
+  // Used when a supplier is typed in on the fly (e.g. mid purchase-order entry,
+  // before there's time to fill in the full supplier record). The rest of the
+  // required-by-schema fields are left blank and filled in later from the
+  // Suppliers page.
+  // email/address are stored as "" rather than left null — the client types
+  // every supplier field as a plain string (and the edit form calls
+  // .trim() on them), so a null here would crash the edit dialog later.
+  quickCreate: (name: string) =>
+    prisma.supplier.create({
+      data: { name, contactPerson: "", phone: "", email: "", address: "", paymentTerms: "" },
+    }),
   update: (id: string, data: SupplierInput) => prisma.supplier.update({ where: { id }, data }),
   async remove(id: string) {
     try {

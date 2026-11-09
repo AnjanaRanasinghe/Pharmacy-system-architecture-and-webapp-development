@@ -21,7 +21,7 @@ export function SupplierCard({ supplier, onEdit, onDelete }: SupplierCardProps) 
             </div>
             <div>
               <p className="font-semibold">{supplier.name}</p>
-              <p className="text-sm text-muted-foreground">{supplier.contactPerson}</p>
+              <p className="text-sm text-muted-foreground">{supplier.contactPerson || "—"}</p>
             </div>
           </div>
           <div className="flex gap-1">
@@ -35,15 +35,15 @@ export function SupplierCard({ supplier, onEdit, onDelete }: SupplierCardProps) 
         </div>
 
         <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-          <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {supplier.phone}</p>
-          <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {supplier.email}</p>
-          <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {supplier.address}</p>
+          <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> {supplier.phone || "—"}</p>
+          <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /> {supplier.email || "—"}</p>
+          <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {supplier.address || "—"}</p>
         </div>
 
         <div className="mt-4 flex items-center justify-between border-t pt-3 text-sm">
           <div>
             <p className="text-muted-foreground">Payment terms</p>
-            <p className="font-medium">{supplier.paymentTerms}</p>
+            <p className="font-medium">{supplier.paymentTerms || "—"}</p>
           </div>
           <div className="text-right">
             <p className="text-muted-foreground">Total purchases</p>

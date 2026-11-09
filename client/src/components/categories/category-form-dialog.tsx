@@ -18,7 +18,7 @@ interface CategoryFormDialogProps {
   onOpenChange: (open: boolean) => void;
   mode: "add" | "edit";
   initialData?: Category | null;
-  onSubmit: (values: CategoryFormValues) => Promise<void>;
+  onSubmit: (values: CategoryFormValues) => Promise<unknown>;
 }
 
 const emptyForm: CategoryFormValues = { name: "", description: "" };

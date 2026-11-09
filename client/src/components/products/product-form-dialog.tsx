@@ -7,7 +7,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CategoryCombobox } from "@/components/categories/category-combobox";
 import { useCategories } from "@/hooks/use-categories";
 import { productsApi } from "@/lib/api/products";
 import { Product } from "@/types/product";
@@ -25,7 +25,7 @@ interface ProductFormDialogProps {
 // creates the product and its first batch together. This dialog just lets you correct
 // an existing product's details afterwards.
 export function ProductFormDialog({ open, onOpenChange, initialData, onSaved }: ProductFormDialogProps) {
-  const { categories } = useCategories();
+  const { categories, quickAddCategory } = useCategories();
 
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
@@ -101,16 +101,7 @@ export function ProductFormDialog({ open, onOpenChange, initialData, onSaved }: 
           </div>
           <div className="space-y-1.5">
             <Label>Category</Label>
-            <Select
-              value={categoryId}
-              onValueChange={(value) => setCategoryId(value ?? "")}
-              items={categories.map((c) => ({ value: c.id, label: c.name }))}
-            >
-              <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-              <SelectContent>
-                {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <CategoryCombobox categories={categories} value={categoryId} onChange={setCategoryId} onCreate={quickAddCategory} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">

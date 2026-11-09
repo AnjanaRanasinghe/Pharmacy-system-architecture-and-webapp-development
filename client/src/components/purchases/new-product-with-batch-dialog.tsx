@@ -7,7 +7,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CategoryCombobox } from "@/components/categories/category-combobox";
 import { useCategories } from "@/hooks/use-categories";
 import { formatCurrency } from "@/lib/utils/currency";
 import { useFieldChainNav } from "@/hooks/use-field-chain-nav";
@@ -33,7 +33,7 @@ interface NewProductWithBatchDialogProps {
 }
 
 export function NewProductWithBatchDialog({ open, onOpenChange, initialValue, onCreated }: NewProductWithBatchDialogProps) {
-  const { categories } = useCategories();
+  const { categories, quickAddCategory } = useCategories();
   const isBarcodeLike = /^[0-9]{6,}$/.test(initialValue);
 
   const [name, setName] = useState("");
@@ -115,16 +115,7 @@ export function NewProductWithBatchDialog({ open, onOpenChange, initialValue, on
           </div>
           <div className="col-span-2 space-y-1.5">
             <Label>Category</Label>
-            <Select
-              value={categoryId}
-              onValueChange={(value) => setCategoryId(value ?? "")}
-              items={categories.map((c) => ({ value: c.id, label: c.name }))}
-            >
-              <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-              <SelectContent>
-                {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <CategoryCombobox categories={categories} value={categoryId} onChange={setCategoryId} onCreate={quickAddCategory} />
           </div>
           <div className="col-span-2 space-y-1.5">
             <Label>Low stock alert level</Label>

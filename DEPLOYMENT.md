@@ -163,3 +163,58 @@ different PC with internet, then copied over via USB:
   over whole (this is the one place where copying `node_modules` instead of
   reinstalling is fine, since both machines did the install).
 - The client's `.next` build output, created once with internet available.
+
+## 8. Updating later — pulling in a code change without redoing setup
+
+Once this PC's install already has `node_modules`, builds, and `.env` files in
+place, a code fix doesn't need any of that redone. Turning the existing folder
+into a git clone in place only touches tracked source files — `node_modules`,
+`.next`, `dist`, the `.env` files, and `backups/` are never tracked, so a pull
+never touches them, and the database isn't touched at all either.
+
+**One-time setup** (skip this if the folder is already a git clone):
+```bash
+cd C:\PharmaCare
+git init
+```
+```bash
+git remote add origin https://github.com/AnjanaRanasinghe/Pharmacy-system-architecture-and-webapp-development.git
+```
+```bash
+git fetch origin main
+```
+
+⚠️ **Before the first pull only:** `start-pharmacy-app.bat` isn't tracked in
+git (see section 6), but if this is the very first time this folder is being
+turned into a clone, git doesn't know that yet — the upcoming pull will
+remove it from the folder once, since `git reset --hard` deletes anything
+that's no longer part of the repo. Copy it somewhere safe first (e.g. rename
+to `start-pharmacy-app.bat.keep`) and copy it back afterward. After this one
+time, it's permanently local and a pull will never touch it again.
+
+**Every update, from then on:**
+```bash
+cd C:\PharmaCare
+git reset --hard origin/main
+```
+That brings in every code change, overwriting only the files actually tracked
+in the repo — nothing else in the folder is touched.
+
+Then rebuild. Most of the time only the server needs `npm install` (check
+whether `server/package.json` changed — if not, skip straight to the builds):
+```bash
+cd C:\PharmaCare\server
+npm install
+```
+```bash
+cd C:\PharmaCare\server
+npm run build
+```
+```bash
+cd C:\PharmaCare\client
+npm run build
+```
+
+Finally, stop the running app (close the Chrome app window, end the two
+`node.exe` processes in Task Manager) and restart it with
+`start-pharmacy-app.bat`.

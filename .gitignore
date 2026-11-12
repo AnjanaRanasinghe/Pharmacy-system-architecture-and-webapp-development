@@ -2,3 +2,4 @@ server/.env
 client/.env
 server/backups/
 server/dist/
+start-pharmacy-app.bat

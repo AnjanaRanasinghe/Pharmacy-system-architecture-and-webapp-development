@@ -11,6 +11,7 @@ export interface CreateSaleInput {
   paymentMethod: "CASH" | "CARD" | "OTHER";
   discountPercent?: number;
   cashTendered?: number;
+  totalOverride?: number;
   items: CreateSaleItemInput[];
 }
 

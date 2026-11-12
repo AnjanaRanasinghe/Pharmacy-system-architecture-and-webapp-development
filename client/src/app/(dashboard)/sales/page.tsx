@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSales } from "@/hooks/use-sales";
-import { formatCurrency } from "@/lib/utils/currency";
+import { formatCurrency, formatNumber } from "@/lib/utils/currency";
 import { groupSaleItemsForDisplay, lineDiscountAmount, lineNetAmount } from "@/lib/utils/sale-items";
 import { cn } from "@/lib/utils";
 import { toDateInputValue } from "@/lib/utils/date";
@@ -169,11 +169,11 @@ export default function SalesInvoicesPage() {
                 <th className="p-3">Date</th>
                 <th className="p-3">Cashier</th>
                 <th className="p-3">Items</th>
-                <th className="p-3">Subtotal</th>
-                <th className="p-3">Discount</th>
-                <th className="p-3">Total</th>
-                <th className="p-3">Cash tend</th>
-                <th className="p-3">Cash balance</th>
+                <th className="p-3 text-right">Subtotal (Rs)</th>
+                <th className="p-3 text-right">Discount (Rs)</th>
+                <th className="p-3 text-right">Total (Rs)</th>
+                <th className="p-3 text-right">Cash tend (Rs)</th>
+                <th className="p-3 text-right">Cash balance (Rs)</th>
                 <th className="p-3">Payment</th>
                 <th className="p-3">Status</th>
                 <th className="p-3 text-right">Actions</th>
@@ -199,11 +199,11 @@ export default function SalesInvoicesPage() {
                       <td className="p-3 text-muted-foreground">{new Date(s.soldAt).toLocaleString()}</td>
                       <td className="p-3">{s.user?.name || s.user?.email}</td>
                       <td className="p-3">{s.items.length}</td>
-                      <td className="p-3">{formatCurrency(s.subtotalAmount)}</td>
-                      <td className="p-3">{totalDiscount > 0 ? formatCurrency(totalDiscount) : "—"}</td>
-                      <td className="p-3 font-medium">{formatCurrency(s.totalAmount)}</td>
-                      <td className="p-3">{s.cashTendered != null ? formatCurrency(s.cashTendered) : "—"}</td>
-                      <td className="p-3">{cashBalance != null ? formatCurrency(cashBalance) : "—"}</td>
+                      <td className="p-3 text-right tabular-nums">{formatNumber(s.subtotalAmount)}</td>
+                      <td className="p-3 text-right tabular-nums">{totalDiscount > 0 ? formatNumber(totalDiscount) : "—"}</td>
+                      <td className="p-3 text-right font-medium tabular-nums">{formatNumber(s.totalAmount)}</td>
+                      <td className="p-3 text-right tabular-nums">{s.cashTendered != null ? formatNumber(s.cashTendered) : "—"}</td>
+                      <td className="p-3 text-right tabular-nums">{cashBalance != null ? formatNumber(cashBalance) : "—"}</td>
                       <td className="p-3">{s.paymentMethod}</td>
                       <td className="p-3">
                         {totalRefunded > 0 ? (
@@ -249,7 +249,7 @@ export default function SalesInvoicesPage() {
                                 <th className="pb-2">Product</th>
                                 <th className="pb-2">Qty</th>
                                 <th className="pb-2">Unit price</th>
-                                <th className="pb-2">Discount</th>
+                                <th className="pb-2">Discount (%)</th>
                                 <th className="pb-2">Line total</th>
                               </tr>
                             </thead>

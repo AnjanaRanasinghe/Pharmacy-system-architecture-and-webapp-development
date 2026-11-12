@@ -12,6 +12,12 @@ interface CreateSaleInput {
   paymentMethod: "CASH" | "CARD" | "OTHER";
   discountPercent?: number;
   cashTendered?: number;
+  // Cash-register rounding: cashiers often charge a tidier round number (e.g. Rs.
+  // 520 instead of an exact Rs. 536.22) rather than deal with small change. When
+  // set, this replaces the computed total; the gap between the two just widens
+  // what the invoice already shows as "Discount" (subtotal - total), with no
+  // separate line item or stored field needed for it.
+  totalOverride?: number;
   items: SaleItemInput[];
 }
 
@@ -107,7 +113,12 @@ export const salesService = {
       // ...then the overall bill discount applies on what's left.
       const discountPercent = input.discountPercent ?? 0;
       const billDiscountAmount = round2(afterItemDiscount * (discountPercent / 100));
-      const totalAmount = round2(afterItemDiscount - billDiscountAmount);
+      const computedTotal = round2(afterItemDiscount - billDiscountAmount);
+
+      if (input.totalOverride !== undefined && input.totalOverride < 0) {
+        throw new AppError("Total can't be negative.");
+      }
+      const totalAmount = input.totalOverride !== undefined ? round2(input.totalOverride) : computedTotal;
 
       if (input.paymentMethod === "CASH" && input.cashTendered !== undefined && input.cashTendered < totalAmount) {
         throw new AppError(`Cash tendered (${input.cashTendered}) is less than the total (${totalAmount}).`);

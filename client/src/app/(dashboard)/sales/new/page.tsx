@@ -49,11 +49,18 @@ export default function NewSaleInvoicePage() {
   const searchRef = useRef<HTMLInputElement>(null);
   const cellRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const billDiscountRef = useRef<HTMLInputElement>(null);
+  const finalTotalRef = useRef<HTMLInputElement>(null);
   const cashTenderedRef = useRef<HTMLInputElement>(null);
   const completeSaleRef = useRef<HTMLButtonElement>(null);
 
   const [rows, setRows] = useState<SaleRow[]>([]);
   const [billDiscountPercent, setBillDiscountPercent] = useState("");
+  // Cash-register rounding — cashiers often charge a tidier number (Rs. 520
+  // instead of an exact Rs. 536.22) rather than deal with small change. This
+  // follows the computed Total automatically until the cashier types their own
+  // figure in; from then on it's used as-is for cash balance and the sale itself.
+  const [finalTotalStr, setFinalTotalStr] = useState("");
+  const [finalTotalEdited, setFinalTotalEdited] = useState(false);
   const [cashTendered, setCashTendered] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -129,13 +136,18 @@ export default function NewSaleInvoicePage() {
 
   // Bill Summary chain: Enter or ↓ moves to the next field, ↑ moves back.
   function handleBillDiscountKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" || e.key === "ArrowDown") { e.preventDefault(); cashTenderedRef.current?.focus(); }
+    if (e.key === "Enter" || e.key === "ArrowDown") { e.preventDefault(); finalTotalRef.current?.focus(); }
     else if (e.key === "ArrowUp") { e.preventDefault(); focusLastRow("discount"); }
+  }
+
+  function handleFinalTotalKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" || e.key === "ArrowDown") { e.preventDefault(); cashTenderedRef.current?.focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); billDiscountRef.current?.focus(); }
   }
 
   function handleCashTenderedKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" || e.key === "ArrowDown") { e.preventDefault(); completeSaleRef.current?.focus(); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); billDiscountRef.current?.focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); finalTotalRef.current?.focus(); }
   }
 
   function handleCompleteButtonKeyDown(e: React.KeyboardEvent<HTMLButtonElement>) {
@@ -186,14 +198,20 @@ export default function NewSaleInvoicePage() {
   const total = round2(afterItemDiscount - billDiscountAmount);
   const totalDiscount = round2(itemDiscountTotal + billDiscountAmount);
 
+  // Follows the computed Total until the cashier types their own rounded figure.
+  useEffect(() => {
+    if (!finalTotalEdited) setFinalTotalStr(total.toFixed(2));
+  }, [total, finalTotalEdited]);
+  const finalTotal = Number(finalTotalStr) || 0;
+
   const cashTendNum = Number(cashTendered) || 0;
-  const cashBalance = cashTendNum - total;
+  const cashBalance = cashTendNum - finalTotal;
 
   async function handleCompleteSale() {
     if (submitting) return;
     if (rows.length === 0) return setError("Add at least one item.");
     if (rows.some((r) => r.quantity <= 0)) return setError("Every item needs a quantity greater than 0.");
-    if (cashTendNum < total) return setError("Cash tendered is less than the total.");
+    if (cashTendNum < finalTotal) return setError("Cash tendered is less than the total.");
 
     setSubmitting(true);
     setError(null);
@@ -202,10 +220,13 @@ export default function NewSaleInvoicePage() {
         paymentMethod: "CASH",
         discountPercent: billDiscount || undefined,
         cashTendered: cashTendNum,
+        totalOverride: finalTotalEdited ? finalTotal : undefined,
         items: rows.map((r) => ({ productId: r.productId, quantity: r.quantity, discountPercent: r.discountPercent || undefined })),
       });
       setRows([]);
       setBillDiscountPercent("");
+      setFinalTotalStr("");
+      setFinalTotalEdited(false);
       setCashTendered("");
       router.push(`/sales/${sale.id}?print=1`);
     } catch (err) {
@@ -218,6 +239,8 @@ export default function NewSaleInvoicePage() {
   function clearSale() {
     setRows([]);
     setBillDiscountPercent("");
+    setFinalTotalStr("");
+    setFinalTotalEdited(false);
     setCashTendered("");
     setError(null);
     searchRef.current?.focus();
@@ -355,6 +378,31 @@ export default function NewSaleInvoicePage() {
             <div className="flex justify-between text-base font-semibold">
               <span>Total</span><span className="text-blue-600">{formatCurrency(total)}</span>
             </div>
+          </div>
+
+          <div className="space-y-1.5 border-t pt-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground">Final total (Rs.)</Label>
+              {finalTotalEdited && (
+                <button
+                  type="button"
+                  onClick={() => setFinalTotalEdited(false)}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                >
+                  Use exact total
+                </button>
+              )}
+            </div>
+            <Input
+              ref={finalTotalRef}
+              type="number" min={0} step="0.01"
+              value={finalTotalStr}
+              onChange={(e) => { setFinalTotalEdited(true); setFinalTotalStr(e.target.value); }}
+              onKeyDown={handleFinalTotalKeyDown}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Fetched from Total above — round it to a tidier amount if you like. Leave it as-is to charge the exact total.
+            </p>
           </div>
 
           <div className="space-y-1.5 border-t pt-3">

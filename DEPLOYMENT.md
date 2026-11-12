@@ -116,20 +116,27 @@ start "PharmaCare API" /min cmd /c "set PORT=5000&& cd /d C:\PharmaCare\server &
 timeout /t 3 /nobreak >nul
 start "PharmaCare Web" /min cmd /c "set PORT=3000&& cd /d C:\PharmaCare\client && npm run start"
 timeout /t 3 /nobreak >nul
-start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --app=http://localhost:3000
+start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --app=http://localhost:3000 --kiosk-printing
 ```
 (Swap the Chrome path for Edge's if that's what's installed — usually
 `C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`.)
+
+`--kiosk-printing` makes the invoice print automatically straight to the
+default printer the instant a sale completes, with no print dialog to click
+through — the receipt printer must be set as the Windows default printer for
+this to go to the right place. Drop this flag if you'd rather confirm each
+print manually.
 
 Put a shortcut to this `.bat` file in the Startup folder so both servers come
 up automatically when the PC turns on:
 - Press `Win+R`, type `shell:startup`, press Enter.
 - Copy a shortcut to `start-pharmacy-app.bat` into that folder.
 
-Also make a Desktop shortcut with the same `chrome --app=http://localhost:3000`
-target (and a custom icon if you like) — that's the icon the pharmacy staff
-double-click. It opens as its own window with no address bar or tabs, so it
-looks and feels like a real desktop app even though it's a browser underneath.
+Also make a Desktop shortcut with the same
+`chrome --app=http://localhost:3000 --kiosk-printing` target (and a custom
+icon if you like) — that's the icon the pharmacy staff double-click. It opens
+as its own window with no address bar or tabs, so it looks and feels like a
+real desktop app even though it's a browser underneath.
 
 **Later, if you want**, this can be upgraded to a real Windows service (so it
 also survives the user logging off, not just a reboot) using NSSM, or wrapped

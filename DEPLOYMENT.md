@@ -105,10 +105,11 @@ no factory reset needed on this PC.
 
 ## 6. Make it start automatically and feel like a desktop app
 
-`start-pharmacy-app.bat` is already in the project root (it came along in the
-zip). Open it in Notepad and update the two `cd /d` paths to wherever you
-extracted the project on this PC (e.g. `C:\PharmaCare\server` and
-`C:\PharmaCare\client`):
+`start-pharmacy-app.bat` isn't tracked in git (its paths are hardcoded per
+machine, like the `.env` files, so it shouldn't be overwritten by a pull on a
+different PC). Create it yourself in the project root with this content,
+adjusted to wherever you extracted the project on this PC (e.g. `C:\PharmaCare\server`
+and `C:\PharmaCare\client`):
 ```bat
 @echo off
 start "PharmaCare API" /min cmd /c "set PORT=5000&& cd /d C:\PharmaCare\server && node dist\server.js"
